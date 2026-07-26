@@ -1,0 +1,62 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Calendar from '../components/Calendar.astro';
+import TaskForm from '../components/TaskForm.astro';
+import TaskList from '../components/TaskList.astro';
+---
+
+<Layout title="Mi Diario de Tareas">
+  <header class="app-header">
+    <h1>📓 Mi Diario de Tareas</h1>
+    <p>Registra y consulta tus actividades diarias</p>
+  </header>
+
+  <main class="app-main">
+    <section class="calendar-panel" aria-label="Calendario">
+      <Calendar />
+    </section>
+
+    <section class="tasks-panel" aria-label="Tareas del día">
+      <TaskForm />
+      <TaskList />
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .app-header {
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+  }
+
+  .app-header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .app-header p {
+    color: var(--color-text-muted);
+  }
+
+  .app-main {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem 2.5rem;
+    align-items: start;
+  }
+
+  .tasks-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 800px) {
+    .app-main {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

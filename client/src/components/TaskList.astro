@@ -1,0 +1,140 @@
+---
+// Lista de tareas del día seleccionado en el calendario.
+import TaskItem from './TaskItem.astro';
+---
+
+<div class="task-list-panel">
+  <h2 id="list-title" class="list-title">Tareas</h2>
+
+  <p id="list-empty" class="list-empty" hidden>No hay tareas para este día.</p>
+  <p id="list-error" class="list-error" role="alert" hidden></p>
+
+  <ul id="task-list" class="task-list"></ul>
+</div>
+
+<!-- Plantilla clonable de cada tarea -->
+<TaskItem />
+
+<script>
+  import { api } from '../lib/api';
+  import {
+    emitEditTask,
+    emitTasksChanged,
+    onDateSelected,
+    onTasksChanged,
+  } from '../lib/events';
+  import type { Task } from '../types/task';
+
+  const MONTH_NAMES = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  const listTitle = document.getElementById('list-title') as HTMLHeadingElement;
+  const listEl = document.getElementById('task-list') as HTMLUListElement;
+  const emptyEl = document.getElementById('list-empty') as HTMLParagraphElement;
+  const errorEl = document.getElementById('list-error') as HTMLParagraphElement;
+  const template = document.getElementById('task-item-template') as HTMLTemplateElement;
+
+  let currentDate: string | null = null;
+
+  function formatDate(dateKey: string): string {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return `${day} de ${MONTH_NAMES[month - 1]} de ${year}`;
+  }
+
+  function renderTask(task: Task): HTMLLIElement {
+    const fragment = template.content.cloneNode(true) as DocumentFragment;
+    const item = fragment.querySelector('.task-item') as HTMLLIElement;
+    const checkbox = item.querySelector('.task-checkbox') as HTMLInputElement;
+    const titleEl = item.querySelector('.task-title') as HTMLSpanElement;
+    const descEl = item.querySelector('.task-description') as HTMLParagraphElement;
+    const editBtn = item.querySelector('.btn-edit') as HTMLButtonElement;
+    const deleteBtn = item.querySelector('.btn-delete') as HTMLButtonElement;
+
+    titleEl.textContent = task.title;
+    descEl.textContent = task.description ?? '';
+    checkbox.checked = task.completed;
+    item.classList.toggle('is-completed', task.completed);
+
+    checkbox.addEventListener('change', () => {
+      api
+        .updateTask(task.id, { completed: checkbox.checked })
+        .then(emitTasksChanged)
+        .catch((error: Error) => showError(error.message));
+    });
+
+    editBtn.addEventListener('click', () => emitEditTask(task));
+
+    deleteBtn.addEventListener('click', () => {
+      if (!confirm(`¿Eliminar la tarea "${task.title}"?`)) return;
+      api
+        .deleteTask(task.id)
+        .then(emitTasksChanged)
+        .catch((error: Error) => showError(error.message));
+    });
+
+    return item;
+  }
+
+  function showError(message: string | null): void {
+    errorEl.hidden = !message;
+    errorEl.textContent = message ?? '';
+  }
+
+  async function loadTasks(): Promise<void> {
+    if (!currentDate) return;
+    try {
+      const tasks = await api.getTasks(currentDate);
+      listEl.innerHTML = '';
+      tasks.forEach((task) => listEl.appendChild(renderTask(task)));
+      emptyEl.hidden = tasks.length > 0;
+      showError(null);
+    } catch (error) {
+      showError((error as Error).message);
+    }
+  }
+
+  onDateSelected((date) => {
+    currentDate = date;
+    listTitle.textContent = `Tareas del ${formatDate(date)}`;
+    void loadTasks();
+  });
+
+  onTasksChanged(() => void loadTasks());
+</script>
+
+<style>
+  .task-list-panel {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+  }
+
+  .list-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .task-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .list-empty {
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .list-error {
+    color: var(--color-danger);
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+</style>

@@ -1,0 +1,225 @@
+---
+// Calendario mensual propio: muestra indicadores en los días con tareas
+// y permite seleccionar un día.
+---
+
+<div class="calendar">
+  <div class="calendar-header">
+    <button id="cal-prev" class="nav-btn" type="button" aria-label="Mes anterior">‹</button>
+    <h2 id="cal-title" class="calendar-title"></h2>
+    <button id="cal-next" class="nav-btn" type="button" aria-label="Mes siguiente">›</button>
+  </div>
+
+  <div class="calendar-weekdays">
+    <span>Lun</span>
+    <span>Mar</span>
+    <span>Mié</span>
+    <span>Jue</span>
+    <span>Vie</span>
+    <span>Sáb</span>
+    <span>Dom</span>
+  </div>
+
+  <div id="cal-grid" class="calendar-grid" role="grid"></div>
+</div>
+
+<script>
+  import { api } from '../lib/api';
+  import { emitDateSelected, onTasksChanged } from '../lib/events';
+
+  const MONTH_NAMES = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const toDateKey = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
+
+  const today = new Date();
+  const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  let viewYear = today.getFullYear();
+  let viewMonth = today.getMonth();
+  let selectedDate = todayKey;
+  let datesWithTasks = new Set<string>();
+
+  const titleEl = document.getElementById('cal-title') as HTMLHeadingElement;
+  const gridEl = document.getElementById('cal-grid') as HTMLDivElement;
+  const prevBtn = document.getElementById('cal-prev') as HTMLButtonElement;
+  const nextBtn = document.getElementById('cal-next') as HTMLButtonElement;
+
+  async function loadDatesWithTasks(): Promise<void> {
+    const month = `${viewYear}-${pad(viewMonth + 1)}`;
+    try {
+      datesWithTasks = new Set(await api.getDatesWithTasks(month));
+    } catch {
+      datesWithTasks = new Set();
+    }
+  }
+
+  function render(): void {
+    titleEl.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    gridEl.innerHTML = '';
+
+    // Offset para semana que empieza en lunes
+    const firstDay = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement('span');
+      empty.className = 'day-empty';
+      gridEl.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = toDateKey(viewYear, viewMonth, day);
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'day-cell';
+      cell.textContent = String(day);
+      cell.setAttribute('aria-label', dateKey);
+
+      if (dateKey === todayKey) cell.classList.add('is-today');
+      if (dateKey === selectedDate) cell.classList.add('is-selected');
+      if (datesWithTasks.has(dateKey)) {
+        const dot = document.createElement('span');
+        dot.className = 'task-dot';
+        cell.appendChild(dot);
+      }
+
+      cell.addEventListener('click', () => {
+        selectedDate = dateKey;
+        render();
+        emitDateSelected(dateKey);
+      });
+
+      gridEl.appendChild(cell);
+    }
+  }
+
+  async function refresh(): Promise<void> {
+    await loadDatesWithTasks();
+    render();
+  }
+
+  prevBtn.addEventListener('click', () => {
+    viewMonth--;
+    if (viewMonth < 0) {
+      viewMonth = 11;
+      viewYear--;
+    }
+    void refresh();
+  });
+
+  nextBtn.addEventListener('click', () => {
+    viewMonth++;
+    if (viewMonth > 11) {
+      viewMonth = 0;
+      viewYear++;
+    }
+    void refresh();
+  });
+
+  // Actualizar indicadores cuando cambian las tareas
+  onTasksChanged(() => void loadDatesWithTasks().then(render));
+
+  // Inicializar y seleccionar el día de hoy
+  void refresh().then(() => emitDateSelected(selectedDate));
+</script>
+
+<style>
+  .calendar {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.25rem;
+  }
+
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .calendar-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text);
+    font-size: 1.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    transition: background-color 0.15s ease;
+  }
+
+  .nav-btn:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .day-empty {
+    aspect-ratio: 1;
+  }
+
+  .day-cell {
+    position: relative;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--color-text);
+    font-size: 0.9rem;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .day-cell:hover {
+    background-color: var(--color-surface-hover);
+  }
+
+  .day-cell.is-today {
+    border-color: var(--color-primary);
+  }
+
+  .day-cell.is-selected {
+    background-color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .task-dot {
+    position: absolute;
+    bottom: 4px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: var(--color-success);
+  }
+</style>
