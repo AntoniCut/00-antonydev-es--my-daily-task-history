@@ -21,10 +21,12 @@ my-daily-task-history/
 ├── package.json              # Workspaces + scripts raíz (concurrently)
 ├── client/                   # Astro (puerto 4321)
 │   ├── astro.config.mjs      # Proxy /api → http://localhost:3001
+│   ├── public/favicon.svg    # Icono del proyecto
 │   └── src/
-│       ├── layouts/Layout.astro
+│       ├── layouts/Layout.astro  # Incluye <ClientRouter /> (view transitions)
 │       ├── pages/index.astro
 │       ├── components/
+│       │   ├── Logo.astro        # Logo SVG de la cabecera
 │       │   ├── Calendar.astro    # Calendario mensual propio
 │       │   ├── TaskForm.astro    # Crear / editar tarea
 │       │   ├── TaskList.astro    # Lista de tareas del día

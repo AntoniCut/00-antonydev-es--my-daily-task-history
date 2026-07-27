@@ -1,3 +1,8 @@
+/*
+	*  -------------------------------------------------------------------------  *
+	*  -----  tasks.service.ts  --  /server/src/services/tasks.service.ts  -----  *
+	*  -------------------------------------------------------------------------  *
+*/
 import { randomUUID } from 'node:crypto';
 import { jsonStorage } from '../storage/jsonStorage.js';
 import type { CreateTaskDto, Task, UpdateTaskDto } from '../types/task.js';

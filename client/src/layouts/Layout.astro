@@ -1,6 +1,13 @@
 ---
+/*
+	*  ----------------------------------------------------------------  *
+	*  -----  Layout.astro  --  /client/src/layouts/Layout.astro  -----  *
+	*  ----------------------------------------------------------------  *
+*/
+import { ClientRouter } from 'astro:transitions';
+
 interface Props {
-  title: string;
+    title: string;
 }
 
 const { title } = Astro.props;
@@ -8,59 +15,64 @@ const { title } = Astro.props;
 
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Diario personal de actividades diarias" />
-    <title>{title}</title>
-  </head>
-  <body>
-    <slot />
-  </body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="Diario personal de actividades diarias"
+        />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <ClientRouter />
+        <title>{title}</title>
+    </head>
+    <body>
+        <slot />
+    </body>
 </html>
 
 <style is:global>
-  :root {
-    --color-bg: #0f1117;
-    --color-surface: #1a1d27;
-    --color-surface-hover: #232737;
-    --color-border: #2e3347;
-    --color-text: #e6e8ef;
-    --color-text-muted: #8b90a3;
-    --color-primary: #5b8def;
-    --color-primary-hover: #74a0f2;
-    --color-danger: #e5626c;
-    --color-danger-hover: #ec7a83;
-    --color-success: #4fbf8b;
-    --radius: 10px;
-    --shadow: 0 4px 16px rgb(0 0 0 / 0.35);
-  }
+    :root {
+        --color-bg: #0f1117;
+        --color-surface: #1a1d27;
+        --color-surface-hover: #232737;
+        --color-border: #2e3347;
+        --color-text: #e6e8ef;
+        --color-text-muted: #8b90a3;
+        --color-primary: #5b8def;
+        --color-primary-hover: #74a0f2;
+        --color-danger: #e5626c;
+        --color-danger-hover: #ec7a83;
+        --color-success: #4fbf8b;
+        --radius: 10px;
+        --shadow: 0 4px 16px rgb(0 0 0 / 0.35);
+    }
 
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-  body {
-    font-family:
-      'Segoe UI',
-      system-ui,
-      -apple-system,
-      sans-serif;
-    background-color: var(--color-bg);
-    color: var(--color-text);
-    min-height: 100vh;
-    line-height: 1.5;
-  }
+    body {
+        font-family:
+            'Segoe UI',
+            system-ui,
+            -apple-system,
+            sans-serif;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        min-height: 100vh;
+        line-height: 1.5;
+    }
 
-  button {
-    font-family: inherit;
-    cursor: pointer;
-  }
+    button {
+        font-family: inherit;
+        cursor: pointer;
+    }
 
-  input,
-  textarea {
-    font-family: inherit;
-  }
+    input,
+    textarea {
+        font-family: inherit;
+    }
 </style>

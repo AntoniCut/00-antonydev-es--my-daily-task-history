@@ -1,3 +1,8 @@
+/*
+	*  ---------------------------------------------------------------------  *
+	*  -----  tasks.routes.ts  --  /server/src/routes/tasks.routes.ts  -----  *
+	*  ---------------------------------------------------------------------  *
+*/
 import { Router } from 'express';
 import { tasksController } from '../controllers/tasks.controller.js';
 

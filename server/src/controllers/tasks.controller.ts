@@ -1,3 +1,8 @@
+/*
+	*  ----------------------------------------------------------------------------------  *
+	*  -----  tasks.controller.ts  --  /server/src/controllers/tasks.controller.ts  -----  *
+	*  ----------------------------------------------------------------------------------  *
+*/
 import type { Request, Response } from 'express';
 import { tasksService } from '../services/tasks.service.js';
 import type { CreateTaskDto, UpdateTaskDto } from '../types/task.js';

@@ -1,3 +1,8 @@
+/*
+	*  --------------------------------------------------------------------  *
+	*  -----  jsonStorage.ts  --  /server/src/storage/jsonStorage.ts  -----  *
+	*  --------------------------------------------------------------------  *
+*/
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
