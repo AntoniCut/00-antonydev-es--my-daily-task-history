@@ -7,27 +7,27 @@ Diario personal de actividades diarias. Selecciona un día en el calendario y cr
 - **Frontend**: [Astro](https://astro.build/) + TypeScript (CSS scoped, interactividad con scripts vanilla)
 - **Backend**: Node.js + Express + TypeScript (API REST)
 - **Persistencia**: archivo JSON (`server/data/tasks.json`)
-- **Monorepo**: npm workspaces (`client` + `server`)
+- **Monorepo**: pnpm workspaces (`client` + `server`)
 
 ## Requisitos
 
 - Node.js 18+ (recomendado 20+)
-- npm 9+
+- pnpm 9+
 
 ## Instalación
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## Uso
 
-### Desarrollo (`npm run dev`)
+### Desarrollo (`pnpm dev`)
 
 Arranca frontend y API por separado:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 | Servicio | URL                           |
@@ -40,11 +40,17 @@ En este modo Astro usa un **proxy de Vite**: las llamadas a `/api` en `:4321` se
 
 ### Producción local (`build` + `preview`)
 
+> **Un único comando compila todo.** `pnpm build` ejecuta en orden ambos builds:
+> 1. **Servidor** → `pnpm --filter server run build` (`tsc` → `server/dist/`)
+> 2. **Cliente** → `pnpm --filter client run build` (`astro check && astro build` → `client/dist/`)
+>
+> No hace falta compilar cada workspace por separado.
+
 Tras compilar, **frontend y API viven en el mismo origen**: Express sirve `client/dist` y la API.
 
 ```bash
-npm run build
-npm run preview   # o npm run start
+pnpm build       # compila servidor (tsc) y cliente (astro build), en este orden
+pnpm preview     # o pnpm start → arranca Express en :3001 (frontend + API)
 ```
 
 | Servicio              | URL                           |
@@ -57,23 +63,28 @@ Importante:
 - Tras `build` + `preview` / `start`, abre **http://localhost:3001**, no el puerto 4321.
 - El script `preview` del proyecto arranca Express (no `astro preview`).
 - `astro preview` solo sirve el HTML estático y **no incluye la API** → las llamadas a `/api` dan 404.
+- Para compilar **solo uno** de los dos (en caso de que lo necesites):
+  ```bash
+  pnpm --filter server run build   # solo el API
+  pnpm --filter client run build   # solo el frontend
+  ```
 
 ### Scripts
 
 ```bash
-npm run dev          # desarrollo: client :4321 + server :3001 (proxy /api)
-npm run dev:server   # solo la API
-npm run dev:client   # solo el frontend
-npm run build        # compila server (tsc) y client (astro build)
-npm run preview      # producción local: frontend + API en :3001
-npm run start        # igual que preview
+pnpm dev          # desarrollo: client :4321 + server :3001 (proxy /api)
+pnpm dev:server   # solo la API
+pnpm dev:client   # solo el frontend
+pnpm build        # compila TODO: server (tsc) y client (astro build) en un solo comando
+pnpm preview      # producción local: frontend + API en :3001
+pnpm start        # igual que preview
 ```
 
 ### Formato (cliente)
 
 ```bash
-npm run format -w client
-npm run format:check -w client
+pnpm --filter client run format
+pnpm --filter client run format:check
 ```
 
 ## Estructura

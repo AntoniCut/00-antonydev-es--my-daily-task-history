@@ -1,97 +1,106 @@
 [
-    {
-        "id": "fcda79d3-7ea8-4f9c-8026-4a7fcaa6c4b2",
-        "title": "aaaa",
-        "description": "eeeeeeeeee",
-        "date": "2026-07-02",
-        "completed": false,
-        "createdAt": "2026-07-25T18:34:55.837Z",
-        "updatedAt": "2026-07-25T18:34:55.837Z"
-    },
-    {
-        "id": "e3e6108f-e4c0-4a8c-b19b-b1d990220e2d",
-        "title": "Revisar correos pendientes",
-        "description": "Responder a los hilos abiertos",
-        "date": "2026-07-27",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.812Z",
-        "updatedAt": "2026-07-27T17:53:26.812Z"
-    },
-    {
-        "id": "46c34c06-024e-457c-a08d-f96c6af0fa00",
-        "title": "Comprar comida",
-        "description": "Leche, pan, fruta, verdura",
-        "date": "2026-07-27",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.820Z",
-        "updatedAt": "2026-07-27T17:53:26.820Z"
-    },
-    {
-        "id": "13b4c607-7b37-4c82-b50a-3c1bb70ba40a",
-        "title": "Ejercicio físico",
-        "description": "30 min de carrera + estiramientos",
-        "date": "2026-07-28",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.831Z",
-        "updatedAt": "2026-07-27T17:53:26.831Z"
-    },
-    {
-        "id": "3daca0a7-54b0-4b2d-9b85-7efaf25e104a",
-        "title": "Leer un capítulo del libro",
-        "date": "2026-07-28",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.841Z",
-        "updatedAt": "2026-07-27T17:53:26.841Z"
-    },
-    {
-        "id": "a5df709e-7a10-4b9a-b95d-a7aad843ff1a",
-        "title": "Llamar al dentista",
-        "description": "Pedir cita para revisión",
-        "date": "2026-07-29",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.852Z",
-        "updatedAt": "2026-07-27T17:53:26.852Z"
-    },
-    {
-        "id": "a06d9a46-ed17-4d62-baee-b71b9a8e6b07",
-        "title": "Reunión con el equipo",
-        "description": "Repaso del sprint y próximos objetivos",
-        "date": "2026-07-29",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.862Z",
-        "updatedAt": "2026-07-27T17:53:26.862Z"
-    },
-    {
-        "id": "c3d68650-7491-49ca-8e03-036dc7b6dcd9",
-        "title": "Pagar recibos del mes",
-        "date": "2026-07-30",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.872Z",
-        "updatedAt": "2026-07-27T17:53:26.872Z"
-    },
-    {
-        "id": "629e42be-615c-4c24-a89d-05e0eef757aa",
-        "title": "Hacer backup del portátil",
-        "date": "2026-07-30",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.882Z",
-        "updatedAt": "2026-07-27T17:53:26.882Z"
-    },
-    {
-        "id": "0f9be3f0-a5a2-4289-879d-da92952990d3",
-        "title": "Estudiar para el curso de Astro",
-        "description": "Repasar el módulo de view transitions",
-        "date": "2026-07-25",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.893Z",
-        "updatedAt": "2026-07-27T17:53:26.893Z"
-    },
-    {
-        "id": "3207f0c3-9ae5-47ae-8f91-79222cbb0816",
-        "title": "Salir a cenar con amigos",
-        "date": "2026-07-31",
-        "completed": false,
-        "createdAt": "2026-07-27T17:53:26.902Z",
-        "updatedAt": "2026-07-27T17:53:26.902Z"
-    }
+  {
+    "id": "fcda79d3-7ea8-4f9c-8026-4a7fcaa6c4b2",
+    "title": "aaaa",
+    "description": "eeeeeeeeee",
+    "date": "2026-07-02",
+    "completed": false,
+    "createdAt": "2026-07-25T18:34:55.837Z",
+    "updatedAt": "2026-07-25T18:34:55.837Z"
+  },
+  {
+    "id": "e3e6108f-e4c0-4a8c-b19b-b1d990220e2d",
+    "title": "Revisar correos pendientes",
+    "description": "Responder a los hilos abiertos",
+    "date": "2026-07-27",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.812Z",
+    "updatedAt": "2026-07-27T17:53:26.812Z"
+  },
+  {
+    "id": "46c34c06-024e-457c-a08d-f96c6af0fa00",
+    "title": "Comprar comida",
+    "description": "Leche, pan, fruta, verdura",
+    "date": "2026-07-27",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.820Z",
+    "updatedAt": "2026-07-27T17:53:26.820Z"
+  },
+  {
+    "id": "13b4c607-7b37-4c82-b50a-3c1bb70ba40a",
+    "title": "Ejercicio físico",
+    "description": "30 min de carrera + estiramientos",
+    "date": "2026-07-28",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.831Z",
+    "updatedAt": "2026-07-27T17:53:26.831Z"
+  },
+  {
+    "id": "3daca0a7-54b0-4b2d-9b85-7efaf25e104a",
+    "title": "Leer un capítulo del libro",
+    "date": "2026-07-28",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.841Z",
+    "updatedAt": "2026-07-27T17:53:26.841Z"
+  },
+  {
+    "id": "a5df709e-7a10-4b9a-b95d-a7aad843ff1a",
+    "title": "Llamar al dentista",
+    "description": "Pedir cita para revisión",
+    "date": "2026-07-29",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.852Z",
+    "updatedAt": "2026-07-27T17:53:26.852Z"
+  },
+  {
+    "id": "a06d9a46-ed17-4d62-baee-b71b9a8e6b07",
+    "title": "Reunión con el equipo",
+    "description": "Repaso del sprint y próximos objetivos",
+    "date": "2026-07-29",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.862Z",
+    "updatedAt": "2026-07-27T17:53:26.862Z"
+  },
+  {
+    "id": "c3d68650-7491-49ca-8e03-036dc7b6dcd9",
+    "title": "Pagar recibos del mes",
+    "date": "2026-07-30",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.872Z",
+    "updatedAt": "2026-07-27T17:53:26.872Z"
+  },
+  {
+    "id": "629e42be-615c-4c24-a89d-05e0eef757aa",
+    "title": "Hacer backup del portátil",
+    "date": "2026-07-30",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.882Z",
+    "updatedAt": "2026-07-27T17:53:26.882Z"
+  },
+  {
+    "id": "0f9be3f0-a5a2-4289-879d-da92952990d3",
+    "title": "Estudiar para el curso de Astro",
+    "description": "Repasar el módulo de view transitions",
+    "date": "2026-07-25",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.893Z",
+    "updatedAt": "2026-07-27T17:53:26.893Z"
+  },
+  {
+    "id": "3207f0c3-9ae5-47ae-8f91-79222cbb0816",
+    "title": "Salir a cenar con amigos",
+    "date": "2026-07-31",
+    "completed": false,
+    "createdAt": "2026-07-27T17:53:26.902Z",
+    "updatedAt": "2026-07-27T17:53:26.902Z"
+  },
+  {
+    "id": "506ec15a-94b7-49ae-9f9c-4f04ed305641",
+    "title": "Alta de mi padre",
+    "description": "Le dan el alta a mi padre",
+    "date": "2026-07-28",
+    "completed": false,
+    "createdAt": "2026-07-27T18:42:46.576Z",
+    "updatedAt": "2026-07-27T18:42:46.576Z"
+  }
 ]

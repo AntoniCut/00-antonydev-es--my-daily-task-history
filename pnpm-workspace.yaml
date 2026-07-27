@@ -1,0 +1,13 @@
+packages:
+  - client
+  - server
+
+allowBuilds:
+  esbuild: set this to true or false
+  sharp: set this to true or false
+
+# pnpm ignora por defecto los scripts de build de las dependencias.
+# Aprobamos las que necesitan ejecutar su postinstall:
+onlyBuiltDependencies:
+  - esbuild
+  - sharp

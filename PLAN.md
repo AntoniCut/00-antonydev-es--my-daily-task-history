@@ -13,7 +13,7 @@ calendario y crear, listar, modificar y eliminar las tareas de ese día.
 
 ## Estructura del proyecto
 
-Monorepo con npm workspaces:
+Monorepo con pnpm workspaces (declarados en `pnpm-workspace.yaml`):
 
 ```
 my-daily-task-history/
@@ -87,12 +87,16 @@ interface Task {
 
 ## Comandos
 
+Gestión de dependencias con **pnpm** (workspaces declarados en
+`pnpm-workspace.yaml`).
+
 ```bash
-npm install        # Instala dependencias de todos los workspaces
-npm run dev        # Arranca server (3001) y client (4321) a la vez
-npm run dev:server # Solo la API
-npm run dev:client # Solo el frontend
-npm run build      # Compila server (tsc) y client (astro build)
+pnpm install        # Instala dependencias de todos los workspaces
+pnpm dev            # Arranca server (3001) y client (4321) a la vez
+pnpm dev:server     # Solo la API
+pnpm dev:client     # Solo el frontend
+pnpm build          # Compila server (tsc) y client (astro build)
+pnpm start          # Arranca el servidor compilado (producción)
 ```
 
 ## Futuras mejoras (pendientes)

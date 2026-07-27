@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232737"/>
+      <stop offset="1" stop-color="#151823"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- Anillas del calendario -->
+  <line x1="22" y1="9" x2="22" y2="17" stroke="#8b90a3" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="42" y1="9" x2="42" y2="17" stroke="#8b90a3" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Cuerpo del calendario -->
+  <rect x="12" y="14" width="40" height="38" rx="6" fill="#0f1117" stroke="#2e3347" stroke-width="2"/>
+
+  <!-- Cabecera del calendario -->
+  <path d="M12 22 L12 20 A6 6 0 0 1 18 14 L46 14 A6 6 0 0 1 52 20 L52 22 Z" fill="#5b8def"/>
+
+  <!-- Check de tarea completada -->
+  <path d="M22 37 l7 7 l14 -15" fill="none" stroke="#4fbf8b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
