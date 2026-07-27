@@ -6,6 +6,9 @@ allowBuilds:
   esbuild: set this to true or false
   sharp: set this to true or false
 
+minimumReleaseAgeExclude:
+  - astro@7.1.4
+
 # pnpm ignora por defecto los scripts de build de las dependencias.
 # Aprobamos las que necesitan ejecutar su postinstall:
 onlyBuiltDependencies:

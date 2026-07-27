@@ -1,0 +1,18 @@
+---
+/*
+ *  ------------------------------------------------------------------  *
+ *  -----  informes.astro  --  /client/src/pages/informes.astro  -----  *
+ *  ------------------------------------------------------------------  *
+ */
+import Layout from '../layouts/Layout.astro';
+import ReportPanel from '../components/ReportPanel.astro';
+---
+
+<Layout
+    title="Informes — Gestor de tareas"
+    heading="Informes"
+    subtitle="Tiempo invertido por tarea y subtarea en el periodo elegido"
+    active="reports"
+>
+    <ReportPanel />
+</Layout>

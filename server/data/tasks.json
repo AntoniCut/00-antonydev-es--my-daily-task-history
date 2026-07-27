@@ -1,106 +1,220 @@
-[
-  {
-    "id": "fcda79d3-7ea8-4f9c-8026-4a7fcaa6c4b2",
-    "title": "aaaa",
-    "description": "eeeeeeeeee",
-    "date": "2026-07-02",
-    "completed": false,
-    "createdAt": "2026-07-25T18:34:55.837Z",
-    "updatedAt": "2026-07-25T18:34:55.837Z"
-  },
-  {
-    "id": "e3e6108f-e4c0-4a8c-b19b-b1d990220e2d",
-    "title": "Revisar correos pendientes",
-    "description": "Responder a los hilos abiertos",
-    "date": "2026-07-27",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.812Z",
-    "updatedAt": "2026-07-27T17:53:26.812Z"
-  },
-  {
-    "id": "46c34c06-024e-457c-a08d-f96c6af0fa00",
-    "title": "Comprar comida",
-    "description": "Leche, pan, fruta, verdura",
-    "date": "2026-07-27",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.820Z",
-    "updatedAt": "2026-07-27T17:53:26.820Z"
-  },
-  {
-    "id": "13b4c607-7b37-4c82-b50a-3c1bb70ba40a",
-    "title": "Ejercicio físico",
-    "description": "30 min de carrera + estiramientos",
-    "date": "2026-07-28",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.831Z",
-    "updatedAt": "2026-07-27T17:53:26.831Z"
-  },
-  {
-    "id": "3daca0a7-54b0-4b2d-9b85-7efaf25e104a",
-    "title": "Leer un capítulo del libro",
-    "date": "2026-07-28",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.841Z",
-    "updatedAt": "2026-07-27T17:53:26.841Z"
-  },
-  {
-    "id": "a5df709e-7a10-4b9a-b95d-a7aad843ff1a",
-    "title": "Llamar al dentista",
-    "description": "Pedir cita para revisión",
-    "date": "2026-07-29",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.852Z",
-    "updatedAt": "2026-07-27T17:53:26.852Z"
-  },
-  {
-    "id": "a06d9a46-ed17-4d62-baee-b71b9a8e6b07",
-    "title": "Reunión con el equipo",
-    "description": "Repaso del sprint y próximos objetivos",
-    "date": "2026-07-29",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.862Z",
-    "updatedAt": "2026-07-27T17:53:26.862Z"
-  },
-  {
-    "id": "c3d68650-7491-49ca-8e03-036dc7b6dcd9",
-    "title": "Pagar recibos del mes",
-    "date": "2026-07-30",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.872Z",
-    "updatedAt": "2026-07-27T17:53:26.872Z"
-  },
-  {
-    "id": "629e42be-615c-4c24-a89d-05e0eef757aa",
-    "title": "Hacer backup del portátil",
-    "date": "2026-07-30",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.882Z",
-    "updatedAt": "2026-07-27T17:53:26.882Z"
-  },
-  {
-    "id": "0f9be3f0-a5a2-4289-879d-da92952990d3",
-    "title": "Estudiar para el curso de Astro",
-    "description": "Repasar el módulo de view transitions",
-    "date": "2026-07-25",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.893Z",
-    "updatedAt": "2026-07-27T17:53:26.893Z"
-  },
-  {
-    "id": "3207f0c3-9ae5-47ae-8f91-79222cbb0816",
-    "title": "Salir a cenar con amigos",
-    "date": "2026-07-31",
-    "completed": false,
-    "createdAt": "2026-07-27T17:53:26.902Z",
-    "updatedAt": "2026-07-27T17:53:26.902Z"
-  },
-  {
-    "id": "506ec15a-94b7-49ae-9f9c-4f04ed305641",
-    "title": "Alta de mi padre",
-    "description": "Le dan el alta a mi padre",
-    "date": "2026-07-28",
-    "completed": false,
-    "createdAt": "2026-07-27T18:42:46.576Z",
-    "updatedAt": "2026-07-27T18:42:46.576Z"
-  }
-]
+{
+  "version": 2,
+  "tasks": [
+    {
+      "id": "696c6e79-8d40-4cf0-bd59-7f7db36c744b",
+      "title": "Informática",
+      "description": "Formación y proyectos",
+      "color": "#5b8def",
+      "completed": false,
+      "active": true,
+      "subtasks": [
+        {
+          "id": "4bed0726-fdc0-405c-aafa-60184e021399",
+          "title": "Udemy",
+          "completed": false,
+          "active": true,
+          "entries": [
+            {
+              "id": "e1000001-udemy-2026-07-21",
+              "date": "2026-07-21",
+              "start": "19:00",
+              "end": "21:00",
+              "minutes": 120,
+              "note": "Curso de TypeScript — módulos 1 y 2",
+              "createdAt": "2026-07-21T21:05:00.000Z",
+              "updatedAt": "2026-07-21T21:05:00.000Z"
+            },
+            {
+              "id": "e1000002-udemy-2026-07-23",
+              "date": "2026-07-23",
+              "start": "18:30",
+              "end": "20:30",
+              "minutes": 120,
+              "note": "Práctica de generics",
+              "createdAt": "2026-07-23T20:35:00.000Z",
+              "updatedAt": "2026-07-23T20:35:00.000Z"
+            },
+            {
+              "id": "e1000003-udemy-2026-07-25",
+              "date": "2026-07-25",
+              "start": "10:00",
+              "end": "12:00",
+              "minutes": 120,
+              "createdAt": "2026-07-25T12:05:00.000Z",
+              "updatedAt": "2026-07-25T12:05:00.000Z"
+            },
+            {
+              "id": "e1000004-udemy-2026-07-27",
+              "date": "2026-07-27",
+              "start": "18:00",
+              "end": "20:30",
+              "minutes": 150,
+              "note": "Proyecto del curso",
+              "createdAt": "2026-07-27T20:35:00.000Z",
+              "updatedAt": "2026-07-27T20:35:00.000Z"
+            }
+          ],
+          "createdAt": "2026-07-27T19:56:51.562Z",
+          "updatedAt": "2026-07-27T20:35:00.000Z"
+        },
+        {
+          "id": "cb008f1b-0e5d-405f-ae49-7ef3c2021a7b",
+          "title": "Devtalles",
+          "completed": false,
+          "active": true,
+          "entries": [
+            {
+              "id": "e2000001-devt-2026-07-22",
+              "date": "2026-07-22",
+              "start": "20:00",
+              "end": "22:00",
+              "minutes": 120,
+              "note": "NestJS — autenticación JWT",
+              "createdAt": "2026-07-22T22:05:00.000Z",
+              "updatedAt": "2026-07-22T22:05:00.000Z"
+            },
+            {
+              "id": "e2000002-devt-2026-07-24",
+              "date": "2026-07-24",
+              "start": "19:00",
+              "end": "21:30",
+              "minutes": 150,
+              "note": "WebSockets y rooms",
+              "createdAt": "2026-07-24T21:35:00.000Z",
+              "updatedAt": "2026-07-24T21:35:00.000Z"
+            },
+            {
+              "id": "e2000003-devt-2026-07-26",
+              "date": "2026-07-26",
+              "start": "11:00",
+              "end": "13:00",
+              "minutes": 120,
+              "createdAt": "2026-07-26T13:05:00.000Z",
+              "updatedAt": "2026-07-26T13:05:00.000Z"
+            }
+          ],
+          "createdAt": "2026-07-27T19:56:51.562Z",
+          "updatedAt": "2026-07-26T13:05:00.000Z"
+        }
+      ],
+      "entries": [],
+      "createdAt": "2026-07-27T19:56:51.562Z",
+      "updatedAt": "2026-07-27T20:35:00.000Z"
+    },
+    {
+      "id": "4f875a5f-4acc-4f28-ac09-a8a17044c461",
+      "title": "Extracolor noche",
+      "description": "Turno de noche",
+      "color": "#3fb6c4",
+      "completed": false,
+      "active": true,
+      "subtasks": [],
+      "entries": [
+        {
+          "id": "e3000001-extc-2026-07-21",
+          "date": "2026-07-21",
+          "start": "22:00",
+          "end": "06:00",
+          "minutes": 480,
+          "note": "Turno completo",
+          "createdAt": "2026-07-22T06:10:00.000Z",
+          "updatedAt": "2026-07-22T06:10:00.000Z"
+        },
+        {
+          "id": "e3000002-extc-2026-07-23",
+          "date": "2026-07-23",
+          "start": "22:00",
+          "end": "06:00",
+          "minutes": 480,
+          "createdAt": "2026-07-24T06:10:00.000Z",
+          "updatedAt": "2026-07-24T06:10:00.000Z"
+        },
+        {
+          "id": "e3000003-extc-2026-07-25",
+          "date": "2026-07-25",
+          "start": "22:00",
+          "end": "05:30",
+          "minutes": 450,
+          "note": "Salida anticipada",
+          "createdAt": "2026-07-26T05:40:00.000Z",
+          "updatedAt": "2026-07-26T05:40:00.000Z"
+        },
+        {
+          "id": "e3000004-extc-2026-07-27",
+          "date": "2026-07-27",
+          "start": "22:00",
+          "end": "01:30",
+          "minutes": 210,
+          "note": "Media jornada",
+          "createdAt": "2026-07-27T22:05:00.000Z",
+          "updatedAt": "2026-07-27T22:05:00.000Z"
+        }
+      ],
+      "createdAt": "2026-07-27T20:08:06.637Z",
+      "updatedAt": "2026-07-27T22:05:00.000Z"
+    },
+    {
+      "id": "d5e03e40-4eee-428f-a38b-df04516c6bc7",
+      "title": "Otras Tareas",
+      "description": "Gestiones del día a día",
+      "color": "#e5a34d",
+      "completed": false,
+      "active": true,
+      "subtasks": [
+        {
+          "id": "739f65c7-f9bd-425a-a57f-660f9306a469",
+          "title": "Gasolinera",
+          "completed": false,
+          "active": true,
+          "entries": [
+            {
+              "id": "e4000001-gaso-2026-07-22",
+              "date": "2026-07-22",
+              "start": "08:15",
+              "end": "08:35",
+              "minutes": 20,
+              "note": "Llenar depósito",
+              "createdAt": "2026-07-22T08:40:00.000Z",
+              "updatedAt": "2026-07-22T08:40:00.000Z"
+            },
+            {
+              "id": "e4000002-gaso-2026-07-26",
+              "date": "2026-07-26",
+              "start": "17:40",
+              "end": "18:00",
+              "minutes": 20,
+              "createdAt": "2026-07-26T18:05:00.000Z",
+              "updatedAt": "2026-07-26T18:05:00.000Z"
+            }
+          ],
+          "createdAt": "2026-07-27T20:08:06.639Z",
+          "updatedAt": "2026-07-26T18:05:00.000Z"
+        },
+        {
+          "id": "a8b1c2d3-e4f5-6789-abcd-ef0123456789",
+          "title": "Supermercado",
+          "completed": false,
+          "active": true,
+          "entries": [
+            {
+              "id": "e5000001-supe-2026-07-24",
+              "date": "2026-07-24",
+              "start": "18:00",
+              "end": "18:45",
+              "minutes": 45,
+              "note": "Compra semanal",
+              "createdAt": "2026-07-24T18:50:00.000Z",
+              "updatedAt": "2026-07-24T18:50:00.000Z"
+            }
+          ],
+          "createdAt": "2026-07-27T20:20:00.000Z",
+          "updatedAt": "2026-07-24T18:50:00.000Z"
+        }
+      ],
+      "entries": [],
+      "createdAt": "2026-07-27T20:08:06.639Z",
+      "updatedAt": "2026-07-27T20:20:00.000Z"
+    }
+  ]
+}

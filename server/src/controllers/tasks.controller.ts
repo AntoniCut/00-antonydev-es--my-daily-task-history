@@ -5,25 +5,26 @@
 */
 import type { Request, Response } from 'express';
 import { tasksService } from '../services/tasks.service.js';
-import type { CreateTaskDto, UpdateTaskDto } from '../types/task.js';
+import type {
+  CreateSubtaskDto,
+  CreateTaskDto,
+  UpdateSubtaskDto,
+  UpdateTaskDto,
+} from '../types/task.js';
+
+const NOT_FOUND_TASK = 'Tarea no encontrada';
+const NOT_FOUND_SUBTASK = 'Subtarea no encontrada';
 
 export class TasksController {
   async getAll(req: Request, res: Response): Promise<void> {
-    const date = req.query.date as string | undefined;
-    const tasks = await tasksService.getAll(date);
-    res.json(tasks);
-  }
-
-  async getDates(req: Request, res: Response): Promise<void> {
-    const month = req.query.month as string | undefined;
-    const dates = await tasksService.getDatesWithTasks(month);
-    res.json(dates);
+    const includeInactive = req.query.includeInactive !== 'false';
+    res.json(await tasksService.getAll(includeInactive));
   }
 
   async getById(req: Request, res: Response): Promise<void> {
     const task = await tasksService.getById(req.params.id);
     if (!task) {
-      res.status(404).json({ error: 'Tarea no encontrada' });
+      res.status(404).json({ error: NOT_FOUND_TASK });
       return;
     }
     res.json(task);
@@ -40,9 +41,12 @@ export class TasksController {
 
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const task = await tasksService.update(req.params.id, req.body as UpdateTaskDto);
+      const task = await tasksService.update(
+        req.params.id,
+        req.body as UpdateTaskDto,
+      );
       if (!task) {
-        res.status(404).json({ error: 'Tarea no encontrada' });
+        res.status(404).json({ error: NOT_FOUND_TASK });
         return;
       }
       res.json(task);
@@ -54,7 +58,52 @@ export class TasksController {
   async delete(req: Request, res: Response): Promise<void> {
     const deleted = await tasksService.delete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ error: 'Tarea no encontrada' });
+      res.status(404).json({ error: NOT_FOUND_TASK });
+      return;
+    }
+    res.status(204).send();
+  }
+
+  async addSubtask(req: Request, res: Response): Promise<void> {
+    try {
+      const subtask = await tasksService.addSubtask(
+        req.params.taskId,
+        req.body as CreateSubtaskDto,
+      );
+      if (!subtask) {
+        res.status(404).json({ error: NOT_FOUND_TASK });
+        return;
+      }
+      res.status(201).json(subtask);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  }
+
+  async updateSubtask(req: Request, res: Response): Promise<void> {
+    try {
+      const subtask = await tasksService.updateSubtask(
+        req.params.taskId,
+        req.params.subtaskId,
+        req.body as UpdateSubtaskDto,
+      );
+      if (!subtask) {
+        res.status(404).json({ error: NOT_FOUND_SUBTASK });
+        return;
+      }
+      res.json(subtask);
+    } catch (error) {
+      res.status(400).json({ error: (error as Error).message });
+    }
+  }
+
+  async deleteSubtask(req: Request, res: Response): Promise<void> {
+    const deleted = await tasksService.deleteSubtask(
+      req.params.taskId,
+      req.params.subtaskId,
+    );
+    if (!deleted) {
+      res.status(404).json({ error: NOT_FOUND_SUBTASK });
       return;
     }
     res.status(204).send();

@@ -1,6 +1,33 @@
-# My Daily Task History  -  Mi Diario de Tareas
+# My Daily Task History  -  Gestor de tareas y tiempo
 
-Diario personal de actividades diarias. Selecciona un día en el calendario y crea, lista, edita o elimina las tareas de esa fecha.
+Dashboard administrativo para gestionar tareas con subtareas y saber cuánto
+tiempo inviertes en cada una. Cada subtarea acumula registros con **hora de
+inicio y hora final**, y la aplicación calcula el tiempo por día, semana, mes o
+año.
+
+```
+Informática (tarea)
+├── Udemy (subtarea)         → 18:00 – 20:30
+└── Devtalles (subtarea)
+Extracolor noche (tarea)     → 22:00 – 01:30  (turno de noche)
+Otras Tareas (tarea)
+└── Gasolinera (subtarea)
+```
+
+## Qué se puede hacer
+
+- **Altas**: crear una tarea indicando sus subtareas en el mismo formulario, y
+  añadir más subtareas después.
+- **Bajas**: dar de baja tareas o subtareas conservando su histórico de tiempo
+  (se pueden volver a dar de alta).
+- **Modificar**: título, descripción y color de la tarea; título de la subtarea;
+  fecha, horas y nota de cada registro de tiempo.
+- **Eliminar**: borrado definitivo de tareas, subtareas o registros.
+- **Registrar tiempo**: hora de inicio y hora final en un día concreto, sobre
+  una subtarea o directamente sobre la tarea. Los tramos que cruzan medianoche
+  (22:00 → 01:30) se calculan correctamente.
+- **Consultar**: contadores de hoy/semana/mes, calendario con el tiempo de cada
+  día e informes por periodo con exportación a CSV.
 
 ## Stack
 
@@ -30,10 +57,10 @@ Arranca frontend y API por separado:
 pnpm dev
 ```
 
-| Servicio | URL                           |
-| -------- | ----------------------------- |
-| Frontend | http://localhost:4321         |
-| API      | http://localhost:3001         |
+| Servicio | URL                              |
+| -------- | -------------------------------- |
+| Frontend | http://localhost:4321            |
+| API      | http://localhost:3001            |
 | Health   | http://localhost:3001/api/health |
 
 En este modo Astro usa un **proxy de Vite**: las llamadas a `/api` en `:4321` se reenvían a Express en `:3001`.
@@ -53,9 +80,9 @@ pnpm build       # compila servidor (tsc) y cliente (astro build), en este orden
 pnpm preview     # o pnpm start → arranca Express en :3001 (frontend + API)
 ```
 
-| Servicio              | URL                           |
-| --------------------- | ----------------------------- |
-| App (frontend + API)  | **http://localhost:3001**     |
+| Servicio              | URL                              |
+| --------------------- | -------------------------------- |
+| App (frontend + API)  | **http://localhost:3001**        |
 | Health                | http://localhost:3001/api/health |
 
 Importante:
@@ -87,6 +114,14 @@ pnpm --filter client run format
 pnpm --filter client run format:check
 ```
 
+## Secciones de la aplicación
+
+| Sección   | Ruta        | Contenido                                                                 |
+| --------- | ----------- | ------------------------------------------------------------------------- |
+| Dashboard | `/`         | Tiempo de hoy/semana/mes, calendario y registros del día seleccionado     |
+| Tareas    | `/tareas`   | Altas, bajas, modificaciones, eliminación y registro de tiempo            |
+| Informes  | `/informes` | Totales por tarea y subtarea del periodo, reparto por día y export a CSV  |
+
 ## Estructura
 
 ```
@@ -94,54 +129,85 @@ my-daily-task-history/
 ├── client/                 # Astro (dev :4321; en producción lo sirve Express)
 │   ├── astro.config.mjs    # Proxy /api → localhost:3001 (solo en dev)
 │   └── src/
-│       ├── components/     # Calendar, TaskForm, TaskList, TaskItem, Logo
-│       ├── layouts/
-│       ├── lib/            # api.ts, events.ts
-│       ├── pages/
+│       ├── components/     # Sidebar, SummaryCards, Calendar, DayLog,
+│       │                   # TaskManager, ReportPanel, Logo
+│       ├── layouts/        # Layout con la barra lateral y los estilos globales
+│       ├── lib/            # api.ts, events.ts, time.ts, dom.ts
+│       ├── pages/          # index (dashboard), tareas, informes
 │       └── types/
 └── server/                 # Express (:3001) — API; tras build también sirve el frontend
-    ├── data/tasks.json     # Persistencia
+    ├── data/tasks.json     # Persistencia (formato v2)
     └── src/
         ├── controllers/
         ├── routes/
-        ├── services/
+        ├── services/       # tasks, entries, reports
         ├── storage/
-        └── types/
+        ├── types/
+        └── utils/          # time, entries, colors
 ```
 
 ## Modelo de datos
 
 ```ts
+interface TimeEntry {
+    id: string;
+    date: string; // "YYYY-MM-DD"
+    start: string; // "HH:MM"
+    end: string; // "HH:MM"
+    minutes: number; // lo calcula el servidor
+    note?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface Subtask {
+    id: string;
+    title: string;
+    completed: boolean;
+    active: boolean; // false = dada de baja
+    entries: TimeEntry[];
+    createdAt: string;
+    updatedAt: string;
+}
+
 interface Task {
-  id: string;           // UUID
-  title: string;
-  description?: string;
-  date: string;         // "YYYY-MM-DD"
-  completed: boolean;
-  createdAt: string;    // ISO 8601
-  updatedAt: string;    // ISO 8601
+    id: string;
+    title: string;
+    description?: string;
+    color: string;
+    completed: boolean;
+    active: boolean; // false = dada de baja
+    subtasks: Subtask[];
+    entries: TimeEntry[]; // tiempo imputado directamente a la tarea
+    createdAt: string;
+    updatedAt: string;
 }
 ```
 
+El archivo de datos usa el formato `{ "version": 2, "tasks": [...] }`. Si
+encuentra el formato antiguo (lista plana de tareas con `date`), lo migra al
+arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
+
 ## API REST
 
-| Método | Endpoint                         | Descripción                                   |
-| ------ | -------------------------------- | --------------------------------------------- |
-| GET    | `/api/health`                    | Estado del servidor                           |
-| GET    | `/api/tasks?date=YYYY-MM-DD`     | Listar tareas (filtro opcional por fecha)     |
-| GET    | `/api/tasks/dates?month=YYYY-MM` | Fechas con tareas (indicadores del calendario)|
-| GET    | `/api/tasks/:id`                 | Obtener una tarea                             |
-| POST   | `/api/tasks`                     | Crear tarea `{ title, description?, date }`   |
-| PUT    | `/api/tasks/:id`                 | Modificar tarea (parcial)                     |
-| DELETE | `/api/tasks/:id`                 | Eliminar tarea                                |
-
-## Cómo funciona la UI
-
-1. El calendario muestra el mes actual; los días con tareas tienen un indicador.
-2. Al seleccionar un día se cargan sus tareas desde la API.
-3. El formulario crea tareas para el día activo, o edita una existente.
-4. Cada tarea se puede completar, editar o eliminar.
-5. Tras un cambio se refrescan la lista y los indicadores del calendario.
+| Método | Endpoint                                          | Descripción                                        |
+| ------ | ------------------------------------------------- | -------------------------------------------------- |
+| GET    | `/api/health`                                     | Estado del servidor                                |
+| GET    | `/api/tasks?includeInactive=false`                | Listar tareas con subtareas y registros            |
+| GET    | `/api/tasks/:id`                                  | Obtener una tarea                                  |
+| POST   | `/api/tasks`                                      | Alta `{ title, description?, color?, subtasks? }`  |
+| PUT    | `/api/tasks/:id`                                  | Modificar (incluye `active` para baja/alta)        |
+| DELETE | `/api/tasks/:id`                                  | Eliminar tarea con su histórico                    |
+| POST   | `/api/tasks/:taskId/subtasks`                     | Añadir subtarea `{ title }`                        |
+| PUT    | `/api/tasks/:taskId/subtasks/:subtaskId`          | Modificar subtarea                                 |
+| DELETE | `/api/tasks/:taskId/subtasks/:subtaskId`          | Eliminar subtarea                                  |
+| GET    | `/api/entries?date=&from=&to=&taskId=&subtaskId=` | Listar registros de tiempo                         |
+| POST   | `/api/entries`                                    | Crear `{ taskId, subtaskId?, date, start, end, note? }` |
+| PUT    | `/api/entries/:id`                                | Modificar `{ date?, start?, end?, note? }`         |
+| DELETE | `/api/entries/:id`                                | Eliminar registro                                  |
+| GET    | `/api/reports/summary?month=YYYY-MM`              | Totales por tarea y subtarea (o `?from=&to=`)      |
+| GET    | `/api/reports/days?month=YYYY-MM`                 | Minutos por día (o `?from=&to=`)                   |
+| GET    | `/api/reports/stats?date=YYYY-MM-DD`              | Contadores de hoy, semana y mes                    |
 
 ## Licencia
 

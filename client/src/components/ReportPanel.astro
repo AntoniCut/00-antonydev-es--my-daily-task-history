@@ -1,0 +1,459 @@
+---
+/*
+ *  -----------------------------------------------------------------------------  *
+ *  -----  ReportPanel.astro  --  /client/src/components/ReportPanel.astro  -----  *
+ *  -----------------------------------------------------------------------------  *
+ */
+
+// Informe del tiempo invertido en un rango: totales por tarea y subtarea,
+// reparto por día y exportación a CSV.
+---
+
+<div id="report-panel" class="report">
+    <form class="panel report-controls" data-form>
+        <div class="field">
+            <label for="report-range">Periodo</label>
+            <select id="report-range" data-range>
+                <option value="week">Esta semana</option>
+                <option value="last-week">Semana anterior</option>
+                <option value="month" selected>Este mes</option>
+                <option value="last-month">Mes anterior</option>
+                <option value="year">Este año</option>
+                <option value="custom">Personalizado</option>
+            </select>
+        </div>
+
+        <div class="field" data-custom hidden>
+            <label for="report-from">Desde</label>
+            <input id="report-from" type="date" data-from />
+        </div>
+
+        <div class="field" data-custom hidden>
+            <label for="report-to">Hasta</label>
+            <input id="report-to" type="date" data-to />
+        </div>
+
+        <button class="btn-secondary" type="submit">Actualizar</button>
+        <button class="btn-secondary" type="button" data-export>
+            Exportar CSV
+        </button>
+    </form>
+
+    <section class="panel">
+        <header class="report-header">
+            <div>
+                <h2 class="panel-title" data-total>—</h2>
+                <p class="panel-subtitle" data-range-label></p>
+            </div>
+            <span class="badge" data-entries></span>
+        </header>
+
+        <p class="error-text" data-error role="alert" hidden></p>
+
+        <ul class="report-list" data-list></ul>
+        <p class="empty-text" data-empty hidden>
+            No hay tiempo registrado en este periodo.
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2 class="panel-title">Reparto por día</h2>
+        <ul class="day-list" data-days></ul>
+        <p class="empty-text" data-days-empty hidden>Sin datos por día.</p>
+    </section>
+</div>
+
+<script>
+    import { api } from '../lib/api';
+    import { create, onPageReady, query, showError } from '../lib/dom';
+    import { onDataChanged } from '../lib/events';
+    import {
+        addDays,
+        formatDateShort,
+        formatHours,
+        formatMinutes,
+        formatRange,
+        formatWeekday,
+        monthRange,
+        todayKey,
+        weekRange,
+        yearRange,
+        type DateRange,
+    } from '../lib/time';
+    import type { ReportSummary } from '../types/task';
+
+    onPageReady((signal) => {
+        const root = document.getElementById('report-panel');
+        if (!root) return;
+
+        const form = query<HTMLFormElement>(root, '[data-form]');
+        const rangeSelect = query<HTMLSelectElement>(root, '[data-range]');
+        const fromInput = query<HTMLInputElement>(root, '[data-from]');
+        const toInput = query<HTMLInputElement>(root, '[data-to]');
+        const customFields = [
+            ...root.querySelectorAll<HTMLElement>('[data-custom]'),
+        ];
+        const exportBtn = query<HTMLButtonElement>(root, '[data-export]');
+
+        const totalEl = query<HTMLHeadingElement>(root, '[data-total]');
+        const rangeLabelEl = query<HTMLParagraphElement>(
+            root,
+            '[data-range-label]',
+        );
+        const entriesEl = query<HTMLSpanElement>(root, '[data-entries]');
+        const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
+        const listEl = query<HTMLUListElement>(root, '[data-list]');
+        const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
+        const daysEl = query<HTMLUListElement>(root, '[data-days]');
+        const daysEmptyEl = query<HTMLParagraphElement>(
+            root,
+            '[data-days-empty]',
+        );
+
+        let summary: ReportSummary | null = null;
+
+        const resolveRange = (): DateRange => {
+            const today = todayKey();
+            switch (rangeSelect.value) {
+                case 'week':
+                    return weekRange(today);
+                case 'last-week':
+                    return weekRange(addDays(today, -7));
+                case 'last-month':
+                    return monthRange(addDays(monthRange(today).from, -1));
+                case 'year':
+                    return yearRange(today);
+                case 'custom':
+                    return {
+                        from: fromInput.value || today,
+                        to: toInput.value || today,
+                    };
+                default:
+                    return monthRange(today);
+            }
+        };
+
+        const bar = (
+            minutes: number,
+            max: number,
+            color: string,
+        ): HTMLElement => {
+            const track = create('span', { className: 'bar-track' });
+            const fill = create('span', { className: 'bar-fill' });
+            fill.style.width = `${max ? Math.max((minutes / max) * 100, 2) : 0}%`;
+            fill.style.backgroundColor = color;
+            track.appendChild(fill);
+            return track;
+        };
+
+        const renderReport = (report: ReportSummary): void => {
+            const tasks = report.tasks.filter((task) => task.minutes > 0);
+            const max = tasks.reduce(
+                (top, task) => Math.max(top, task.minutes),
+                0,
+            );
+
+            totalEl.textContent = `${formatMinutes(report.totalMinutes)} · ${formatHours(report.totalMinutes)} h`;
+            entriesEl.textContent = `${tasks.reduce((count, task) => count + task.entries, 0)} registros`;
+
+            listEl.replaceChildren(
+                ...tasks.map((task) => {
+                    const item = create('li', { className: 'report-item' });
+
+                    const row = create('div', { className: 'report-row' });
+                    row.append(
+                        create('span', {
+                            className: 'report-title',
+                            text: task.title,
+                        }),
+                        bar(task.minutes, max, task.color),
+                        create('span', {
+                            className: 'report-time',
+                            text: formatMinutes(task.minutes),
+                        }),
+                        create('span', {
+                            className: 'report-share',
+                            text: report.totalMinutes
+                                ? `${Math.round((task.minutes / report.totalMinutes) * 100)}%`
+                                : '0%',
+                        }),
+                    );
+                    item.appendChild(row);
+
+                    const children = [
+                        ...(task.directMinutes
+                            ? [
+                                  {
+                                      title: 'Sin subtarea',
+                                      minutes: task.directMinutes,
+                                  },
+                              ]
+                            : []),
+                        ...task.subtasks.filter(
+                            (subtask) => subtask.minutes > 0,
+                        ),
+                    ];
+
+                    if (children.length) {
+                        const sublist = create('ul', {
+                            className: 'report-sublist',
+                        });
+                        for (const child of children) {
+                            const subItem = create('li', {
+                                className: 'report-subitem',
+                            });
+                            subItem.append(
+                                create('span', {
+                                    className: 'report-title',
+                                    text: child.title,
+                                }),
+                                bar(child.minutes, max, task.color),
+                                create('span', {
+                                    className: 'report-time',
+                                    text: formatMinutes(child.minutes),
+                                }),
+                            );
+                            sublist.appendChild(subItem);
+                        }
+                        item.appendChild(sublist);
+                    }
+
+                    return item;
+                }),
+            );
+            emptyEl.hidden = tasks.length > 0;
+
+            const maxDay = report.days.reduce(
+                (top, day) => Math.max(top, day.minutes),
+                0,
+            );
+            daysEl.replaceChildren(
+                ...report.days.map((day) => {
+                    const item = create('li', { className: 'day-item' });
+                    item.append(
+                        create('span', {
+                            className: 'day-label',
+                            text: `${formatWeekday(day.date).slice(0, 3)} ${formatDateShort(day.date)}`,
+                        }),
+                        bar(day.minutes, maxDay, 'var(--color-primary)'),
+                        create('span', {
+                            className: 'report-time',
+                            text: formatMinutes(day.minutes),
+                        }),
+                    );
+                    return item;
+                }),
+            );
+            daysEmptyEl.hidden = report.days.length > 0;
+        };
+
+        const load = async (): Promise<void> => {
+            const range = resolveRange();
+            fromInput.value = range.from;
+            toInput.value = range.to;
+            rangeLabelEl.textContent = formatRange(range);
+
+            try {
+                summary = await api.getSummary(range);
+                renderReport(summary);
+                showError(errorEl, null);
+            } catch (error) {
+                showError(errorEl, (error as Error).message);
+            }
+        };
+
+        const exportCsv = (): void => {
+            if (!summary) return;
+
+            const rows = [
+                ['Tarea', 'Subtarea', 'Minutos', 'Horas', 'Registros'],
+            ];
+            for (const task of summary.tasks) {
+                if (!task.minutes) continue;
+                if (task.directMinutes) {
+                    rows.push([
+                        task.title,
+                        '',
+                        String(task.directMinutes),
+                        formatHours(task.directMinutes),
+                        '',
+                    ]);
+                }
+                for (const subtask of task.subtasks) {
+                    if (!subtask.minutes) continue;
+                    rows.push([
+                        task.title,
+                        subtask.title,
+                        String(subtask.minutes),
+                        formatHours(subtask.minutes),
+                        String(subtask.entries),
+                    ]);
+                }
+            }
+
+            const csv = rows
+                .map((row) => row.map((cell) => `"${cell}"`).join(';'))
+                .join('\n');
+            const url = URL.createObjectURL(
+                new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }),
+            );
+            const link = create('a', {
+                attrs: {
+                    href: url,
+                    download: `tiempo_${summary.from ?? 'inicio'}_${summary.to ?? 'fin'}.csv`,
+                },
+            });
+            link.click();
+            URL.revokeObjectURL(url);
+        };
+
+        rangeSelect.addEventListener(
+            'change',
+            () => {
+                const isCustom = rangeSelect.value === 'custom';
+                for (const field of customFields) field.hidden = !isCustom;
+                if (!isCustom) void load();
+            },
+            { signal },
+        );
+
+        form.addEventListener(
+            'submit',
+            (event) => {
+                event.preventDefault();
+                void load();
+            },
+            { signal },
+        );
+
+        exportBtn.addEventListener('click', exportCsv, { signal });
+        onDataChanged(() => void load(), { signal });
+
+        void load();
+    });
+</script>
+
+<style>
+    .report {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .report-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 0.75rem;
+    }
+
+    .report-controls .field {
+        min-width: 150px;
+    }
+
+    .report-controls button {
+        height: 2.4rem;
+    }
+
+    .report-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .report-list,
+    .day-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    /* Filas generadas con JS: estilos scoped vía :global() */
+    .report-list :global(.report-item) {
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+    }
+
+    .report-list :global(.report-row),
+    .report-list :global(.report-subitem),
+    .day-list :global(.day-item) {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .report-list :global(.report-sublist) {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin: 0.5rem 0 0 0.9rem;
+        padding-left: 0.85rem;
+        border-left: 2px solid var(--color-border);
+    }
+
+    .report-list :global(.report-title) {
+        font-weight: 600;
+        font-size: 0.9rem;
+        width: 170px;
+        flex-shrink: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .report-list :global(.report-subitem .report-title) {
+        font-weight: 400;
+        color: var(--color-text-muted);
+    }
+
+    .day-list :global(.day-label) {
+        color: var(--color-text-muted);
+        font-size: 0.82rem;
+        width: 90px;
+        flex-shrink: 0;
+    }
+
+    .report-list :global(.bar-track),
+    .day-list :global(.bar-track) {
+        flex: 1;
+        height: 8px;
+        background-color: var(--color-surface-hover);
+        border-radius: 999px;
+        overflow: hidden;
+        min-width: 40px;
+    }
+
+    .report-list :global(.bar-fill),
+    .day-list :global(.bar-fill) {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+    }
+
+    .report-list :global(.report-time),
+    .day-list :global(.report-time) {
+        font-variant-numeric: tabular-nums;
+        font-size: 0.85rem;
+        width: 70px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .report-list :global(.report-share) {
+        color: var(--color-text-muted);
+        font-size: 0.8rem;
+        width: 42px;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 700px) {
+        .report-list :global(.report-title) {
+            width: 110px;
+        }
+    }
+</style>

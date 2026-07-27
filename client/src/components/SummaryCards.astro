@@ -1,0 +1,124 @@
+---
+/*
+ *  -------------------------------------------------------------------------------  *
+ *  -----  SummaryCards.astro  --  /client/src/components/SummaryCards.astro  -----  *
+ *  -------------------------------------------------------------------------------  *
+ */
+
+// Tarjetas de cabecera del dashboard: tiempo registrado hoy, esta semana y este
+// mes, más el número de tareas y subtareas activas.
+---
+
+<section id="summary-cards" class="stats" aria-label="Resumen de tiempo">
+    <article class="stat-card">
+        <p class="stat-label">Hoy</p>
+        <p class="stat-value" data-value="today">—</p>
+        <p class="stat-hint" data-hint="today"></p>
+    </article>
+
+    <article class="stat-card">
+        <p class="stat-label">Esta semana</p>
+        <p class="stat-value" data-value="week">—</p>
+        <p class="stat-hint" data-hint="week"></p>
+    </article>
+
+    <article class="stat-card">
+        <p class="stat-label">Este mes</p>
+        <p class="stat-value" data-value="month">—</p>
+        <p class="stat-hint" data-hint="month"></p>
+    </article>
+
+    <article class="stat-card">
+        <p class="stat-label">En activo</p>
+        <p class="stat-value" data-value="tasks">—</p>
+        <p class="stat-hint" data-hint="tasks"></p>
+    </article>
+
+    <p class="error-text stats-error" data-error role="alert" hidden></p>
+</section>
+
+<script>
+    import { api } from '../lib/api';
+    import { onPageReady, query, showError } from '../lib/dom';
+    import { onDataChanged } from '../lib/events';
+    import { formatDateLong, formatHours, formatMinutes } from '../lib/time';
+
+    onPageReady((signal) => {
+        const root = document.getElementById('summary-cards');
+        if (!root) return;
+
+        const value = (key: string) =>
+            query<HTMLParagraphElement>(root, `[data-value="${key}"]`);
+        const hint = (key: string) =>
+            query<HTMLParagraphElement>(root, `[data-hint="${key}"]`);
+        const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
+
+        const load = async (): Promise<void> => {
+            try {
+                const stats = await api.getStats();
+
+                value('today').textContent = formatMinutes(stats.todayMinutes);
+                hint('today').textContent = formatDateLong(stats.date);
+
+                value('week').textContent = formatMinutes(stats.weekMinutes);
+                hint('week').textContent =
+                    `${formatHours(stats.weekMinutes)} h acumuladas`;
+
+                value('month').textContent = formatMinutes(stats.monthMinutes);
+                hint('month').textContent =
+                    `${formatHours(stats.monthMinutes)} h acumuladas`;
+
+                value('tasks').textContent = String(stats.activeTasks);
+                hint('tasks').textContent =
+                    `${stats.activeSubtasks} subtarea${stats.activeSubtasks === 1 ? '' : 's'}`;
+
+                showError(errorEl, null);
+            } catch (error) {
+                showError(errorEl, (error as Error).message);
+            }
+        };
+
+        onDataChanged(() => void load(), { signal });
+        void load();
+    });
+</script>
+
+<style>
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+
+    .stat-card {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1rem 1.1rem;
+    }
+
+    .stat-label {
+        color: var(--color-text-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+        font-size: 1.7rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-top: 0.15rem;
+    }
+
+    .stat-hint {
+        color: var(--color-text-muted);
+        font-size: 0.8rem;
+    }
+
+    .stats-error {
+        grid-column: 1 / -1;
+    }
+</style>

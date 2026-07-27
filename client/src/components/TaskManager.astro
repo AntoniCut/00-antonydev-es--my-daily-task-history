@@ -1,0 +1,892 @@
+---
+/*
+ *  -----------------------------------------------------------------------------  *
+ *  -----  TaskManager.astro  --  /client/src/components/TaskManager.astro  -----  *
+ *  -----------------------------------------------------------------------------  *
+ */
+
+// Gestor completo: alta de tareas (con sus subtareas), modificación, baja
+// lógica, eliminación y registro de tiempo sobre cualquier tarea o subtarea.
+---
+
+<div id="task-manager" class="manager">
+    <form class="panel new-task" data-new-form>
+        <h2 class="panel-title">Nueva tarea</h2>
+        <p class="panel-subtitle">
+            Puedes añadir sus subtareas antes de darla de alta.
+        </p>
+
+        <div class="field">
+            <label for="new-title">Título</label>
+            <input
+                id="new-title"
+                type="text"
+                data-title
+                maxlength="120"
+                placeholder="Informática, Extracolor noche, Otras tareas..."
+                required
+            />
+        </div>
+
+        <div class="field">
+            <label for="new-description">Descripción</label>
+            <textarea
+                id="new-description"
+                rows="2"
+                data-description
+                placeholder="Opcional"></textarea>
+        </div>
+
+        <div class="field">
+            <label>Subtareas</label>
+            <div class="subtask-inputs" data-subtask-inputs></div>
+            <button
+                class="btn-secondary btn-inline"
+                type="button"
+                data-add-input
+            >
+                + Añadir subtarea
+            </button>
+        </div>
+
+        <div class="new-task-actions">
+            <button class="btn-primary" type="submit">Dar de alta</button>
+        </div>
+
+        <p class="error-text" data-new-error role="alert" hidden></p>
+    </form>
+
+    <section class="panel task-tree">
+        <header class="tree-header">
+            <div>
+                <h2 class="panel-title">Tareas y subtareas</h2>
+                <p class="panel-subtitle" data-count></p>
+            </div>
+            <label class="toggle-inactive">
+                <input type="checkbox" data-show-inactive />
+                Ver dadas de baja
+            </label>
+        </header>
+
+        <p class="error-text" data-tree-error role="alert" hidden></p>
+        <ul class="task-list" data-list></ul>
+        <p class="empty-text" data-empty hidden>
+            Todavía no hay tareas dadas de alta.
+        </p>
+    </section>
+</div>
+
+<script>
+    import { api } from '../lib/api';
+    import { create, onPageReady, query, showError } from '../lib/dom';
+    import { emitDataChanged, onDataChanged } from '../lib/events';
+    import {
+        currentTime,
+        formatMinutes,
+        monthRange,
+        todayKey,
+    } from '../lib/time';
+    import type { Subtask, Task, TimeEntry } from '../types/task';
+
+    onPageReady((signal) => {
+        const root = document.getElementById('task-manager');
+        if (!root) return;
+
+        const newForm = query<HTMLFormElement>(root, '[data-new-form]');
+        const titleInput = query<HTMLInputElement>(root, '[data-title]');
+        const descInput = query<HTMLTextAreaElement>(
+            root,
+            '[data-description]',
+        );
+        const subtaskInputs = query<HTMLDivElement>(
+            root,
+            '[data-subtask-inputs]',
+        );
+        const addInputBtn = query<HTMLButtonElement>(root, '[data-add-input]');
+        const newErrorEl = query<HTMLParagraphElement>(
+            root,
+            '[data-new-error]',
+        );
+
+        const treeErrorEl = query<HTMLParagraphElement>(
+            root,
+            '[data-tree-error]',
+        );
+        const listEl = query<HTMLUListElement>(root, '[data-list]');
+        const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
+        const countEl = query<HTMLParagraphElement>(root, '[data-count]');
+        const showInactiveInput = query<HTMLInputElement>(
+            root,
+            '[data-show-inactive]',
+        );
+
+        const month = monthRange();
+        let tasks: Task[] = [];
+
+        /* --------------------------  Totales  -------------------------- */
+
+        const sumEntries = (entries: TimeEntry[], onlyMonth = false): number =>
+            entries
+                .filter(
+                    (entry) =>
+                        !onlyMonth ||
+                        (entry.date >= month.from && entry.date <= month.to),
+                )
+                .reduce((total, entry) => total + entry.minutes, 0);
+
+        const taskMinutes = (task: Task, onlyMonth = false): number =>
+            sumEntries(task.entries, onlyMonth) +
+            task.subtasks.reduce(
+                (total, subtask) =>
+                    total + sumEntries(subtask.entries, onlyMonth),
+                0,
+            );
+
+        /* ----------------------  Formularios inline  ------------------- */
+
+        /** Abre un formulario bajo la fila; si ya estaba abierto, lo cierra. */
+        const togglePanel = (
+            host: HTMLElement,
+            kind: string,
+            build: () => HTMLElement,
+        ): void => {
+            const open = host.querySelector(`[data-panel="${kind}"]`);
+            host.replaceChildren();
+            if (open) return;
+
+            const panel = build();
+            panel.dataset.panel = kind;
+            host.appendChild(panel);
+            panel.querySelector<HTMLElement>('input, textarea')?.focus();
+        };
+
+        const inlineInput = (
+            value: string,
+            attrs: Record<string, string> = {},
+        ): HTMLInputElement =>
+            create('input', {
+                className: 'inline-input',
+                attrs: { value, ...attrs },
+            });
+
+        const inlineActions = (submitText: string): HTMLDivElement => {
+            const actions = create('div', { className: 'inline-actions' });
+            actions.append(
+                create('button', {
+                    className: 'btn-primary',
+                    text: submitText,
+                    attrs: { type: 'submit' },
+                }),
+                create('button', {
+                    className: 'btn-secondary',
+                    text: 'Cancelar',
+                    attrs: { type: 'button', 'data-cancel': '' },
+                }),
+            );
+            return actions;
+        };
+
+        /** Envuelve un formulario inline: cancelar recarga, submit delega en `save`. */
+        const inlineForm = (
+            children: HTMLElement[],
+            save: () => Promise<unknown>,
+        ): HTMLFormElement => {
+            const form = create('form', { className: 'inline-form' });
+            form.append(...children);
+
+            form.querySelector('[data-cancel]')?.addEventListener(
+                'click',
+                () => void load(),
+                { signal },
+            );
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                save()
+                    .then(emitDataChanged)
+                    .catch((error: Error) =>
+                        showError(treeErrorEl, error.message),
+                    );
+            });
+
+            return form;
+        };
+
+        const buildTaskEditForm = (task: Task): HTMLFormElement => {
+            const title = inlineInput(task.title, {
+                type: 'text',
+                maxlength: '120',
+                required: 'true',
+                'aria-label': 'Título de la tarea',
+            });
+            const description = inlineInput(task.description ?? '', {
+                type: 'text',
+                maxlength: '250',
+                placeholder: 'Descripción',
+                'aria-label': 'Descripción',
+            });
+            const color = create('input', {
+                className: 'inline-color',
+                attrs: {
+                    type: 'color',
+                    value: task.color,
+                    'aria-label': 'Color de la tarea',
+                },
+            });
+
+            return inlineForm(
+                [title, description, color, inlineActions('Guardar')],
+                () =>
+                    api.updateTask(task.id, {
+                        title: title.value,
+                        description: description.value,
+                        color: color.value,
+                    }),
+            );
+        };
+
+        const buildSubtaskEditForm = (
+            task: Task,
+            subtask: Subtask,
+        ): HTMLFormElement => {
+            const title = inlineInput(subtask.title, {
+                type: 'text',
+                maxlength: '120',
+                required: 'true',
+                'aria-label': 'Título de la subtarea',
+            });
+
+            return inlineForm([title, inlineActions('Guardar')], () =>
+                api.updateSubtask(task.id, subtask.id, { title: title.value }),
+            );
+        };
+
+        const buildNewSubtaskForm = (task: Task): HTMLFormElement => {
+            const title = inlineInput('', {
+                type: 'text',
+                maxlength: '120',
+                required: 'true',
+                placeholder: 'Nueva subtarea',
+                'aria-label': 'Título de la nueva subtarea',
+            });
+
+            return inlineForm([title, inlineActions('Añadir')], () =>
+                api.createSubtask(task.id, { title: title.value }),
+            );
+        };
+
+        const buildEntryForm = (
+            task: Task,
+            subtask?: Subtask,
+        ): HTMLFormElement => {
+            const date = inlineInput(todayKey(), {
+                type: 'date',
+                required: 'true',
+                'aria-label': 'Fecha',
+            });
+            const start = inlineInput(currentTime(), {
+                type: 'time',
+                required: 'true',
+                'aria-label': 'Hora de inicio',
+            });
+            const end = inlineInput('', {
+                type: 'time',
+                required: 'true',
+                'aria-label': 'Hora final',
+            });
+            const note = inlineInput('', {
+                type: 'text',
+                maxlength: '140',
+                placeholder: 'Nota (opcional)',
+                'aria-label': 'Nota',
+            });
+
+            const legend = create('span', {
+                className: 'inline-legend',
+                text: subtask ? `⏱ ${subtask.title}` : `⏱ ${task.title}`,
+            });
+
+            return inlineForm(
+                [legend, date, start, end, note, inlineActions('Registrar')],
+                () =>
+                    api.createEntry({
+                        taskId: task.id,
+                        subtaskId: subtask?.id ?? null,
+                        date: date.value,
+                        start: start.value,
+                        end: end.value,
+                        note: note.value,
+                    }),
+            );
+        };
+
+        /* -------------------------  Acciones  -------------------------- */
+
+        const run = (action: Promise<unknown>): void => {
+            action
+                .then(emitDataChanged)
+                .catch((error: Error) => showError(treeErrorEl, error.message));
+        };
+
+        const iconButton = (
+            text: string,
+            title: string,
+            onClick: () => void,
+        ): HTMLButtonElement => {
+            const button = create('button', {
+                className: 'icon-btn',
+                text,
+                title,
+                attrs: { type: 'button' },
+            });
+            button.addEventListener('click', onClick, { signal });
+            return button;
+        };
+
+        /* -------------------------  Renderizado  ----------------------- */
+
+        const renderSubtask = (task: Task, subtask: Subtask): HTMLLIElement => {
+            const item = create('li', { className: 'subtask-item' });
+            if (!subtask.active) item.classList.add('is-inactive');
+            if (subtask.completed) item.classList.add('is-completed');
+
+            const row = create('div', { className: 'row' });
+
+            const checkbox = create('input', {
+                className: 'row-check',
+                attrs: {
+                    type: 'checkbox',
+                    'aria-label': `Marcar "${subtask.title}" como completada`,
+                },
+            });
+            checkbox.checked = subtask.completed;
+            checkbox.addEventListener(
+                'change',
+                () =>
+                    run(
+                        api.updateSubtask(task.id, subtask.id, {
+                            completed: checkbox.checked,
+                        }),
+                    ),
+                { signal },
+            );
+
+            const name = create('span', {
+                className: 'row-title',
+                text: subtask.title,
+            });
+
+            const total = sumEntries(subtask.entries);
+            const badges = create('div', { className: 'row-badges' });
+            badges.appendChild(
+                create('span', {
+                    className: 'badge time-badge',
+                    text: formatMinutes(total),
+                    title: 'Tiempo total registrado',
+                }),
+            );
+            if (sumEntries(subtask.entries, true)) {
+                badges.appendChild(
+                    create('span', {
+                        className: 'badge',
+                        text: `mes: ${formatMinutes(sumEntries(subtask.entries, true))}`,
+                    }),
+                );
+            }
+            if (!subtask.active) {
+                badges.appendChild(
+                    create('span', { className: 'badge', text: 'baja' }),
+                );
+            }
+
+            const panelHost = create('div', { className: 'panel-host' });
+            const actions = create('div', { className: 'row-actions' });
+            actions.append(
+                iconButton('⏱', 'Registrar tiempo', () =>
+                    togglePanel(panelHost, 'entry', () =>
+                        buildEntryForm(task, subtask),
+                    ),
+                ),
+                iconButton('✏️', 'Modificar subtarea', () =>
+                    togglePanel(panelHost, 'edit', () =>
+                        buildSubtaskEditForm(task, subtask),
+                    ),
+                ),
+                iconButton(
+                    subtask.active ? '⏸' : '▶',
+                    subtask.active ? 'Dar de baja' : 'Volver a dar de alta',
+                    () =>
+                        run(
+                            api.updateSubtask(task.id, subtask.id, {
+                                active: !subtask.active,
+                            }),
+                        ),
+                ),
+                iconButton('🗑️', 'Eliminar subtarea', () => {
+                    if (
+                        !confirm(
+                            `¿Eliminar la subtarea "${subtask.title}" y sus ${formatMinutes(total)} registrados?`,
+                        )
+                    ) {
+                        return;
+                    }
+                    run(api.deleteSubtask(task.id, subtask.id));
+                }),
+            );
+
+            row.append(checkbox, name, badges, actions);
+            item.append(row, panelHost);
+            return item;
+        };
+
+        const renderTask = (task: Task): HTMLLIElement => {
+            const item = create('li', { className: 'task-item' });
+            if (!task.active) item.classList.add('is-inactive');
+            if (task.completed) item.classList.add('is-completed');
+
+            const row = create('div', { className: 'row task-row' });
+
+            const color = create('span', { className: 'task-color' });
+            color.style.backgroundColor = task.color;
+
+            const checkbox = create('input', {
+                className: 'row-check',
+                attrs: {
+                    type: 'checkbox',
+                    'aria-label': `Marcar "${task.title}" como completada`,
+                },
+            });
+            checkbox.checked = task.completed;
+            checkbox.addEventListener(
+                'change',
+                () =>
+                    run(
+                        api.updateTask(task.id, {
+                            completed: checkbox.checked,
+                        }),
+                    ),
+                { signal },
+            );
+
+            const info = create('div', { className: 'task-info' });
+            info.appendChild(
+                create('span', { className: 'row-title', text: task.title }),
+            );
+            if (task.description) {
+                info.appendChild(
+                    create('span', {
+                        className: 'task-description',
+                        text: task.description,
+                    }),
+                );
+            }
+
+            const total = taskMinutes(task);
+            const badges = create('div', { className: 'row-badges' });
+            badges.appendChild(
+                create('span', {
+                    className: 'badge time-badge',
+                    text: formatMinutes(total),
+                    title: 'Tiempo total registrado',
+                }),
+            );
+            const monthMinutes = taskMinutes(task, true);
+            if (monthMinutes) {
+                badges.appendChild(
+                    create('span', {
+                        className: 'badge',
+                        text: `mes: ${formatMinutes(monthMinutes)}`,
+                    }),
+                );
+            }
+            if (task.subtasks.length) {
+                badges.appendChild(
+                    create('span', {
+                        className: 'badge',
+                        text: `${task.subtasks.length} subtarea${task.subtasks.length === 1 ? '' : 's'}`,
+                    }),
+                );
+            }
+            if (!task.active) {
+                badges.appendChild(
+                    create('span', { className: 'badge', text: 'baja' }),
+                );
+            }
+
+            const panelHost = create('div', { className: 'panel-host' });
+            const actions = create('div', { className: 'row-actions' });
+            actions.append(
+                iconButton('＋', 'Añadir subtarea', () =>
+                    togglePanel(panelHost, 'subtask', () =>
+                        buildNewSubtaskForm(task),
+                    ),
+                ),
+                iconButton('⏱', 'Registrar tiempo en la tarea', () =>
+                    togglePanel(panelHost, 'entry', () => buildEntryForm(task)),
+                ),
+                iconButton('✏️', 'Modificar tarea', () =>
+                    togglePanel(panelHost, 'edit', () =>
+                        buildTaskEditForm(task),
+                    ),
+                ),
+                iconButton(
+                    task.active ? '⏸' : '▶',
+                    task.active ? 'Dar de baja' : 'Volver a dar de alta',
+                    () =>
+                        run(api.updateTask(task.id, { active: !task.active })),
+                ),
+                iconButton('🗑️', 'Eliminar tarea', () => {
+                    if (
+                        !confirm(
+                            `¿Eliminar "${task.title}", sus ${task.subtasks.length} subtareas y sus ${formatMinutes(total)} registrados?`,
+                        )
+                    ) {
+                        return;
+                    }
+                    run(api.deleteTask(task.id));
+                }),
+            );
+
+            row.append(color, checkbox, info, badges, actions);
+            item.append(row, panelHost);
+
+            const visibleSubtasks = task.subtasks.filter(
+                (subtask) => subtask.active || showInactiveInput.checked,
+            );
+            if (visibleSubtasks.length) {
+                const subtaskList = create('ul', { className: 'subtask-list' });
+                subtaskList.append(
+                    ...visibleSubtasks.map((subtask) =>
+                        renderSubtask(task, subtask),
+                    ),
+                );
+                item.appendChild(subtaskList);
+            }
+
+            return item;
+        };
+
+        const render = (): void => {
+            const visible = tasks.filter(
+                (task) => task.active || showInactiveInput.checked,
+            );
+            listEl.replaceChildren(...visible.map(renderTask));
+            emptyEl.hidden = visible.length > 0;
+
+            const active = tasks.filter((task) => task.active).length;
+            countEl.textContent = `${active} de alta · ${tasks.length - active} de baja`;
+        };
+
+        const load = async (): Promise<void> => {
+            try {
+                tasks = await api.getTasks();
+                render();
+                showError(treeErrorEl, null);
+            } catch (error) {
+                showError(treeErrorEl, (error as Error).message);
+            }
+        };
+
+        /* ------------------  Alta de tareas con subtareas  -------------- */
+
+        const addSubtaskInput = (): void => {
+            const row = create('div', { className: 'subtask-input-row' });
+            const input = create('input', {
+                attrs: {
+                    type: 'text',
+                    maxlength: '120',
+                    placeholder: `Subtarea ${subtaskInputs.children.length + 1}`,
+                    'aria-label': 'Título de la subtarea',
+                },
+            });
+            const remove = create('button', {
+                className: 'icon-btn',
+                text: '✕',
+                title: 'Quitar esta subtarea',
+                attrs: { type: 'button' },
+            });
+            remove.addEventListener('click', () => row.remove(), { signal });
+
+            row.append(input, remove);
+            subtaskInputs.appendChild(row);
+            input.focus();
+        };
+
+        const resetNewForm = (): void => {
+            newForm.reset();
+            subtaskInputs.replaceChildren();
+            addSubtaskInput();
+            showError(newErrorEl, null);
+        };
+
+        addInputBtn.addEventListener('click', addSubtaskInput, { signal });
+
+        newForm.addEventListener(
+            'submit',
+            (event) => {
+                event.preventDefault();
+                const subtasks = [
+                    ...subtaskInputs.querySelectorAll<HTMLInputElement>(
+                        'input',
+                    ),
+                ]
+                    .map((input) => input.value.trim())
+                    .filter(Boolean);
+
+                api.createTask({
+                    title: titleInput.value,
+                    description: descInput.value,
+                    subtasks,
+                })
+                    .then(() => {
+                        resetNewForm();
+                        emitDataChanged();
+                    })
+                    .catch((error: Error) =>
+                        showError(newErrorEl, error.message),
+                    );
+            },
+            { signal },
+        );
+
+        showInactiveInput.addEventListener('change', render, { signal });
+        onDataChanged(() => void load(), { signal });
+
+        addSubtaskInput();
+        void load();
+    });
+</script>
+
+<style>
+    .manager {
+        display: grid;
+        grid-template-columns: minmax(280px, 340px) 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    .new-task {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+    }
+
+    .new-task .panel-subtitle {
+        margin-top: -0.7rem;
+    }
+
+    .subtask-inputs {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .subtask-inputs :global(.subtask-input-row) {
+        display: flex;
+        gap: 0.4rem;
+    }
+
+    .subtask-inputs :global(input) {
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        color: var(--color-text);
+        padding: 0.5rem 0.65rem;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .subtask-inputs :global(input:focus) {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+
+    .btn-inline {
+        align-self: flex-start;
+        font-size: 0.82rem;
+        padding: 0.35rem 0.7rem;
+    }
+
+    .new-task-actions {
+        display: flex;
+        gap: 0.6rem;
+    }
+
+    .tree-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .toggle-inactive {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--color-text-muted);
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    .task-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    /* Filas y formularios se crean con JS: se estilan con :global() para que
+     reciban los estilos scoped del componente */
+    .task-list :global(.task-item) {
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+    }
+
+    .task-list :global(.row) {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .task-list :global(.task-color) {
+        width: 8px;
+        height: 30px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .task-list :global(.row-check) {
+        width: 1rem;
+        height: 1rem;
+        accent-color: var(--color-success);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .task-list :global(.task-info) {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .task-list :global(.row-title) {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .task-list :global(.is-completed .row-title) {
+        text-decoration: line-through;
+        color: var(--color-text-muted);
+    }
+
+    .task-list :global(.is-inactive) {
+        opacity: 0.55;
+    }
+
+    .task-list :global(.task-description) {
+        color: var(--color-text-muted);
+        font-size: 0.82rem;
+    }
+
+    .task-list :global(.row-badges) {
+        display: flex;
+        gap: 0.3rem;
+        flex-wrap: wrap;
+    }
+
+    .task-list :global(.row-actions) {
+        display: flex;
+        gap: 0.3rem;
+        margin-left: auto;
+    }
+
+    .task-list :global(.subtask-list) {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin: 0.6rem 0 0 1.1rem;
+        padding-left: 0.9rem;
+        border-left: 2px solid var(--color-border);
+    }
+
+    .task-list :global(.subtask-item .row-title) {
+        font-weight: 500;
+        font-size: 0.92rem;
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .task-list :global(.panel-host:not(:empty)) {
+        margin-top: 0.6rem;
+    }
+
+    .task-list :global(.inline-form) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 0.6rem;
+    }
+
+    .task-list :global(.inline-legend) {
+        color: var(--color-text-muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .task-list :global(.inline-input) {
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text);
+        padding: 0.4rem 0.55rem;
+        font-size: 0.87rem;
+        min-width: 0;
+    }
+
+    .task-list :global(.inline-input[type='text']) {
+        flex: 1;
+        min-width: 140px;
+    }
+
+    .task-list :global(.inline-input:focus) {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+
+    .task-list :global(.inline-color) {
+        background: none;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        width: 2.2rem;
+        height: 2rem;
+        padding: 2px;
+    }
+
+    .task-list :global(.inline-actions) {
+        display: flex;
+        gap: 0.4rem;
+        margin-left: auto;
+    }
+
+    .task-list :global(.inline-actions button) {
+        font-size: 0.82rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    @media (max-width: 1000px) {
+        .manager {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

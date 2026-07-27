@@ -5,53 +5,72 @@
 */
 import { randomUUID } from 'node:crypto';
 import { jsonStorage } from '../storage/jsonStorage.js';
-import type { CreateTaskDto, Task, UpdateTaskDto } from '../types/task.js';
+import { isHexColor, nextColor } from '../utils/colors.js';
+import type {
+  CreateSubtaskDto,
+  CreateTaskDto,
+  Subtask,
+  Task,
+  UpdateSubtaskDto,
+  UpdateTaskDto,
+} from '../types/task.js';
 
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_TITLE_LENGTH = 120;
+
+const requireTitle = (value: unknown, label = 'El título'): string => {
+  const title = typeof value === 'string' ? value.trim() : '';
+  if (!title) throw new Error(`${label} es obligatorio`);
+  if (title.length > MAX_TITLE_LENGTH) {
+    throw new Error(`${label} no puede superar ${MAX_TITLE_LENGTH} caracteres`);
+  }
+  return title;
+};
+
+const optionalText = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() ? value.trim() : undefined;
+
+const byCreatedAt = (a: { createdAt: string }, b: { createdAt: string }): number =>
+  a.createdAt.localeCompare(b.createdAt);
 
 export class TasksService {
-  async getAll(date?: string): Promise<Task[]> {
+  /** Tareas ordenadas por antigüedad; las dadas de baja quedan al final. */
+  async getAll(includeInactive = true): Promise<Task[]> {
     const tasks = await jsonStorage.readAll();
-    const filtered = date ? tasks.filter((t) => t.date === date) : tasks;
-    return filtered.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  }
-
-  /** Devuelve las fechas (YYYY-MM-DD) que tienen al menos una tarea en un mes dado. */
-  async getDatesWithTasks(month?: string): Promise<string[]> {
-    const tasks = await jsonStorage.readAll();
-    const dates = new Set<string>();
-    for (const task of tasks) {
-      if (!month || task.date.startsWith(month)) {
-        dates.add(task.date);
-      }
-    }
-    return [...dates].sort();
+    return tasks
+      .filter((task) => includeInactive || task.active)
+      .sort((a, b) => Number(b.active) - Number(a.active) || byCreatedAt(a, b));
   }
 
   async getById(id: string): Promise<Task | undefined> {
     const tasks = await jsonStorage.readAll();
-    return tasks.find((t) => t.id === id);
+    return tasks.find((task) => task.id === id);
   }
 
   async create(dto: CreateTaskDto): Promise<Task> {
-    if (!dto.title?.trim()) {
-      throw new Error('El título es obligatorio');
-    }
-    if (!dto.date || !DATE_REGEX.test(dto.date)) {
-      throw new Error('La fecha debe tener formato YYYY-MM-DD');
-    }
-
+    const title = requireTitle(dto?.title);
     const tasks = await jsonStorage.readAll();
     const now = new Date().toISOString();
+
+    const subtaskTitles = Array.isArray(dto.subtasks) ? dto.subtasks : [];
+    const subtasks = subtaskTitles
+      .filter((subtaskTitle) => optionalText(subtaskTitle))
+      .map((subtaskTitle) =>
+        this.buildSubtask(requireTitle(subtaskTitle, 'El título de la subtarea'), now),
+      );
+
     const task: Task = {
       id: randomUUID(),
-      title: dto.title.trim(),
-      description: dto.description?.trim() || undefined,
-      date: dto.date,
+      title,
+      description: optionalText(dto.description),
+      color: isHexColor(dto.color) ? dto.color : nextColor(tasks.length),
       completed: false,
+      active: true,
+      subtasks,
+      entries: [],
       createdAt: now,
       updatedAt: now,
     };
+
     tasks.push(task);
     await jsonStorage.writeAll(tasks);
     return task;
@@ -59,39 +78,101 @@ export class TasksService {
 
   async update(id: string, dto: UpdateTaskDto): Promise<Task | undefined> {
     const tasks = await jsonStorage.readAll();
-    const index = tasks.findIndex((t) => t.id === id);
-    if (index === -1) return undefined;
+    const task = tasks.find((item) => item.id === id);
+    if (!task) return undefined;
 
-    if (dto.date !== undefined && !DATE_REGEX.test(dto.date)) {
-      throw new Error('La fecha debe tener formato YYYY-MM-DD');
+    if (dto.title !== undefined) task.title = requireTitle(dto.title);
+    if (dto.description !== undefined) {
+      task.description = optionalText(dto.description);
     }
-    if (dto.title !== undefined && !dto.title.trim()) {
-      throw new Error('El título no puede estar vacío');
+    if (dto.color !== undefined) {
+      if (!isHexColor(dto.color)) {
+        throw new Error('El color debe ser un hexadecimal tipo #5b8def');
+      }
+      task.color = dto.color;
     }
+    if (dto.completed !== undefined) task.completed = Boolean(dto.completed);
+    if (dto.active !== undefined) task.active = Boolean(dto.active);
+    task.updatedAt = new Date().toISOString();
 
-    const current = tasks[index];
-    const updated: Task = {
-      ...current,
-      title: dto.title !== undefined ? dto.title.trim() : current.title,
-      description:
-        dto.description !== undefined
-          ? dto.description.trim() || undefined
-          : current.description,
-      date: dto.date ?? current.date,
-      completed: dto.completed ?? current.completed,
-      updatedAt: new Date().toISOString(),
-    };
-    tasks[index] = updated;
     await jsonStorage.writeAll(tasks);
-    return updated;
+    return task;
   }
 
   async delete(id: string): Promise<boolean> {
     const tasks = await jsonStorage.readAll();
-    const filtered = tasks.filter((t) => t.id !== id);
-    if (filtered.length === tasks.length) return false;
-    await jsonStorage.writeAll(filtered);
+    const remaining = tasks.filter((task) => task.id !== id);
+    if (remaining.length === tasks.length) return false;
+    await jsonStorage.writeAll(remaining);
     return true;
+  }
+
+  async addSubtask(
+    taskId: string,
+    dto: CreateSubtaskDto,
+  ): Promise<Subtask | undefined> {
+    const title = requireTitle(dto?.title, 'El título de la subtarea');
+    const tasks = await jsonStorage.readAll();
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) return undefined;
+
+    const now = new Date().toISOString();
+    const subtask = this.buildSubtask(title, now);
+    task.subtasks.push(subtask);
+    task.updatedAt = now;
+
+    await jsonStorage.writeAll(tasks);
+    return subtask;
+  }
+
+  async updateSubtask(
+    taskId: string,
+    subtaskId: string,
+    dto: UpdateSubtaskDto,
+  ): Promise<Subtask | undefined> {
+    const tasks = await jsonStorage.readAll();
+    const task = tasks.find((item) => item.id === taskId);
+    const subtask = task?.subtasks.find((item) => item.id === subtaskId);
+    if (!task || !subtask) return undefined;
+
+    if (dto.title !== undefined) {
+      subtask.title = requireTitle(dto.title, 'El título de la subtarea');
+    }
+    if (dto.completed !== undefined) subtask.completed = Boolean(dto.completed);
+    if (dto.active !== undefined) subtask.active = Boolean(dto.active);
+
+    const now = new Date().toISOString();
+    subtask.updatedAt = now;
+    task.updatedAt = now;
+
+    await jsonStorage.writeAll(tasks);
+    return subtask;
+  }
+
+  async deleteSubtask(taskId: string, subtaskId: string): Promise<boolean> {
+    const tasks = await jsonStorage.readAll();
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) return false;
+
+    const remaining = task.subtasks.filter((item) => item.id !== subtaskId);
+    if (remaining.length === task.subtasks.length) return false;
+
+    task.subtasks = remaining;
+    task.updatedAt = new Date().toISOString();
+    await jsonStorage.writeAll(tasks);
+    return true;
+  }
+
+  private buildSubtask(title: string, now: string): Subtask {
+    return {
+      id: randomUUID(),
+      title,
+      completed: false,
+      active: true,
+      entries: [],
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 }
 

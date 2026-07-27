@@ -1,0 +1,18 @@
+---
+/*
+ *  --------------------------------------------------------------  *
+ *  -----  tareas.astro  --  /client/src/pages/tareas.astro  -----  *
+ *  --------------------------------------------------------------  *
+ */
+import Layout from '../layouts/Layout.astro';
+import TaskManager from '../components/TaskManager.astro';
+---
+
+<Layout
+    title="Tareas — Gestor de tareas"
+    heading="Tareas"
+    subtitle="Altas, bajas, modificaciones y registro de tiempo"
+    active="tasks"
+>
+    <TaskManager />
+</Layout>

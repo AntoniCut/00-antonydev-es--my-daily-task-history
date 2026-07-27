@@ -1,16 +1,20 @@
 ---
 /*
-	*  ----------------------------------------------------------------  *
-	*  -----  Layout.astro  --  /client/src/layouts/Layout.astro  -----  *
-	*  ----------------------------------------------------------------  *
-*/
+ *  ----------------------------------------------------------------  *
+ *  -----  Layout.astro  --  /client/src/layouts/Layout.astro  -----  *
+ *  ----------------------------------------------------------------  *
+ */
 import { ClientRouter } from 'astro:transitions';
+import Sidebar from '../components/Sidebar.astro';
 
 interface Props {
     title: string;
+    heading: string;
+    subtitle: string;
+    active: 'dashboard' | 'tasks' | 'reports';
 }
 
-const { title } = Astro.props;
+const { title, heading, subtitle, active } = Astro.props;
 ---
 
 <!doctype html>
@@ -20,16 +24,74 @@ const { title } = Astro.props;
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta
             name="description"
-            content="Diario personal de actividades diarias"
+            content="Dashboard de gestión de tareas y control del tiempo invertido"
         />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <ClientRouter />
         <title>{title}</title>
     </head>
     <body>
-        <slot />
+        <div class="shell">
+            <Sidebar active={active} />
+
+            <div class="content">
+                <header class="page-header">
+                    <h1>{heading}</h1>
+                    <p>{subtitle}</p>
+                </header>
+                <main class="page-main">
+                    <slot />
+                </main>
+            </div>
+        </div>
     </body>
 </html>
+
+<style>
+    .shell {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        min-height: 100vh;
+    }
+
+    .content {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .page-header {
+        padding: 1.75rem 2rem 1.25rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .page-header p {
+        color: var(--color-text-muted);
+        font-size: 0.9rem;
+    }
+
+    .page-main {
+        padding: 1.5rem 2rem 2.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+        .shell {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header,
+        .page-main {
+            padding-inline: 1.25rem;
+        }
+    }
+</style>
 
 <style is:global>
     :root {
@@ -44,6 +106,7 @@ const { title } = Astro.props;
         --color-danger: #e5626c;
         --color-danger-hover: #ec7a83;
         --color-success: #4fbf8b;
+        --color-warning: #e5a34d;
         --radius: 10px;
         --shadow: 0 4px 16px rgb(0 0 0 / 0.35);
     }
@@ -71,8 +134,182 @@ const { title } = Astro.props;
         cursor: pointer;
     }
 
+    /* Las reglas de layout de .field y compañía ganan al `display: none` que
+     el navegador aplica a [hidden], así que se refuerza aquí */
+    [hidden] {
+        display: none !important;
+    }
+
     input,
+    select,
     textarea {
         font-family: inherit;
+    }
+
+    /* --------------------  Piezas compartidas de UI  -------------------- */
+
+    .panel {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.25rem;
+    }
+
+    .panel-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+
+    .panel-subtitle {
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .field label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        color: var(--color-text);
+        padding: 0.55rem 0.7rem;
+        font-size: 0.92rem;
+        resize: vertical;
+        transition: border-color 0.15s ease;
+        width: 100%;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+        outline: none;
+        border-color: var(--color-primary);
+    }
+
+    .field input:disabled,
+    .field select:disabled,
+    .field textarea:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.55rem 1.1rem;
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .btn-primary {
+        background-color: var(--color-primary);
+        border: 1px solid var(--color-primary);
+        color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: var(--color-primary-hover);
+    }
+
+    .btn-secondary {
+        background: none;
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+        font-weight: 500;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+        background-color: var(--color-surface-hover);
+    }
+
+    .btn-danger {
+        background: none;
+        border: 1px solid var(--color-danger);
+        color: var(--color-danger);
+        font-weight: 500;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+        background-color: var(--color-danger);
+        color: #fff;
+    }
+
+    .btn-primary:disabled,
+    .btn-secondary:disabled,
+    .btn-danger:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .icon-btn {
+        background: none;
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text);
+        font-size: 0.85rem;
+        line-height: 1;
+        padding: 0.35rem 0.5rem;
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .icon-btn:hover {
+        background-color: var(--color-surface-hover);
+        border-color: var(--color-primary);
+    }
+
+    .error-text {
+        color: var(--color-danger);
+        font-size: 0.85rem;
+    }
+
+    .muted-text {
+        color: var(--color-text-muted);
+        font-size: 0.88rem;
+    }
+
+    .empty-text {
+        color: var(--color-text-muted);
+        text-align: center;
+        padding: 1.5rem 0;
+    }
+
+    .badge {
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        color: var(--color-text-muted);
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.1rem 0.55rem;
+        white-space: nowrap;
+    }
+
+    .time-badge {
+        background-color: color-mix(
+            in srgb,
+            var(--color-primary) 16%,
+            transparent
+        );
+        border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+        color: var(--color-primary);
     }
 </style>

@@ -1,0 +1,464 @@
+---
+/*
+ *  -------------------------------------------------------------------  *
+ *  -----  DayLog.astro  --  /client/src/components/DayLog.astro  -----  *
+ *  -------------------------------------------------------------------  *
+ */
+
+// Registros de tiempo del día seleccionado en el calendario, con alta rápida
+// (tarea / subtarea + hora de inicio y fin) y edición en línea.
+---
+
+<section id="day-log" class="panel">
+    <header class="log-header">
+        <div>
+            <h2 class="panel-title" data-title>Registros del día</h2>
+            <p class="panel-subtitle" data-subtitle>
+                Selecciona un día en el calendario
+            </p>
+        </div>
+        <span class="badge time-badge" data-total>0m</span>
+    </header>
+
+    <form class="entry-form" data-form>
+        <div class="field field-task">
+            <label for="entry-task">Tarea</label>
+            <select id="entry-task" data-task required></select>
+        </div>
+
+        <div class="field field-task">
+            <label for="entry-subtask">Subtarea</label>
+            <select id="entry-subtask" data-subtask></select>
+        </div>
+
+        <div class="field field-time">
+            <label for="entry-start">Inicio</label>
+            <input id="entry-start" type="time" data-start required />
+        </div>
+
+        <div class="field field-time">
+            <label for="entry-end">Fin</label>
+            <input id="entry-end" type="time" data-end required />
+        </div>
+
+        <div class="field field-note">
+            <label for="entry-note">Nota</label>
+            <input
+                id="entry-note"
+                type="text"
+                data-note
+                maxlength="140"
+                placeholder="Opcional"
+            />
+        </div>
+
+        <button class="btn-primary" type="submit" data-submit>Registrar</button>
+    </form>
+
+    <p class="error-text" data-error role="alert" hidden></p>
+    <p class="muted-text" data-no-tasks hidden>
+        Todavía no hay tareas: créalas en la sección <a href="/tareas">Tareas</a
+        > para poder registrar tiempo.
+    </p>
+
+    <ul class="entry-list" data-list></ul>
+    <p class="empty-text" data-empty hidden>Sin registros en este día.</p>
+</section>
+
+<script>
+    import { api } from '../lib/api';
+    import { create, onPageReady, query, showError } from '../lib/dom';
+    import {
+        emitDataChanged,
+        onDataChanged,
+        onDateSelected,
+    } from '../lib/events';
+    import {
+        currentTime,
+        formatDateLong,
+        formatMinutes,
+        formatWeekday,
+        todayKey,
+    } from '../lib/time';
+    import type { Task, TimeEntryView } from '../types/task';
+
+    onPageReady((signal) => {
+        const root = document.getElementById('day-log');
+        if (!root) return;
+
+        const titleEl = query<HTMLHeadingElement>(root, '[data-title]');
+        const subtitleEl = query<HTMLParagraphElement>(root, '[data-subtitle]');
+        const totalEl = query<HTMLSpanElement>(root, '[data-total]');
+        const form = query<HTMLFormElement>(root, '[data-form]');
+        const taskSelect = query<HTMLSelectElement>(root, '[data-task]');
+        const subtaskSelect = query<HTMLSelectElement>(root, '[data-subtask]');
+        const startInput = query<HTMLInputElement>(root, '[data-start]');
+        const endInput = query<HTMLInputElement>(root, '[data-end]');
+        const noteInput = query<HTMLInputElement>(root, '[data-note]');
+        const submitBtn = query<HTMLButtonElement>(root, '[data-submit]');
+        const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
+        const noTasksEl = query<HTMLParagraphElement>(root, '[data-no-tasks]');
+        const listEl = query<HTMLUListElement>(root, '[data-list]');
+        const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
+
+        let currentDate = todayKey();
+        let tasks: Task[] = [];
+
+        const fillSubtasks = (): void => {
+            const task = tasks.find((item) => item.id === taskSelect.value);
+            subtaskSelect.innerHTML = '';
+            subtaskSelect.appendChild(
+                create('option', {
+                    text: 'Sin subtarea (directo a la tarea)',
+                    attrs: { value: '' },
+                }),
+            );
+            for (const subtask of task?.subtasks.filter(
+                (item) => item.active,
+            ) ?? []) {
+                subtaskSelect.appendChild(
+                    create('option', {
+                        text: subtask.title,
+                        attrs: { value: subtask.id },
+                    }),
+                );
+            }
+        };
+
+        const fillTasks = async (): Promise<void> => {
+            const previous = taskSelect.value;
+            tasks = (await api.getTasks()).filter((task) => task.active);
+
+            taskSelect.innerHTML = '';
+            for (const task of tasks) {
+                taskSelect.appendChild(
+                    create('option', {
+                        text: task.title,
+                        attrs: { value: task.id },
+                    }),
+                );
+            }
+            if (previous && tasks.some((task) => task.id === previous)) {
+                taskSelect.value = previous;
+            }
+            fillSubtasks();
+
+            const hasTasks = tasks.length > 0;
+            noTasksEl.hidden = hasTasks;
+            for (const control of [
+                taskSelect,
+                subtaskSelect,
+                startInput,
+                endInput,
+                noteInput,
+                submitBtn,
+            ]) {
+                control.disabled = !hasTasks;
+            }
+        };
+
+        const renderRow = (entry: TimeEntryView): HTMLLIElement => {
+            const item = create('li', { className: 'entry-item' });
+            const dot = create('span', { className: 'entry-color' });
+            dot.style.backgroundColor = entry.taskColor;
+
+            const body = create('div', { className: 'entry-body' });
+            const label = create('span', { className: 'entry-task' });
+            label.textContent = entry.subtaskTitle
+                ? `${entry.taskTitle} › ${entry.subtaskTitle}`
+                : entry.taskTitle;
+            body.appendChild(label);
+
+            const crossesMidnight = entry.end <= entry.start;
+            body.appendChild(
+                create('span', {
+                    className: 'entry-hours',
+                    text: `${entry.start} → ${entry.end}${crossesMidnight ? ' (+1 día)' : ''}`,
+                }),
+            );
+            if (entry.note) {
+                body.appendChild(
+                    create('span', {
+                        className: 'entry-note',
+                        text: entry.note,
+                    }),
+                );
+            }
+
+            const total = create('span', {
+                className: 'badge time-badge',
+                text: formatMinutes(entry.minutes),
+            });
+
+            const actions = create('div', { className: 'entry-actions' });
+            const editBtn = create('button', {
+                className: 'icon-btn',
+                text: '✏️',
+                title: 'Editar registro',
+                attrs: { type: 'button' },
+            });
+            const deleteBtn = create('button', {
+                className: 'icon-btn',
+                text: '🗑️',
+                title: 'Eliminar registro',
+                attrs: { type: 'button' },
+            });
+            actions.append(editBtn, deleteBtn);
+
+            editBtn.addEventListener(
+                'click',
+                () => item.replaceChildren(buildEditForm(entry)),
+                { signal },
+            );
+
+            deleteBtn.addEventListener(
+                'click',
+                () => {
+                    if (!confirm('¿Eliminar este registro de tiempo?')) return;
+                    api.deleteEntry(entry.id)
+                        .then(emitDataChanged)
+                        .catch((error: Error) =>
+                            showError(errorEl, error.message),
+                        );
+                },
+                { signal },
+            );
+
+            item.append(dot, body, total, actions);
+            return item;
+        };
+
+        const buildEditForm = (entry: TimeEntryView): HTMLFormElement => {
+            const editForm = create('form', { className: 'entry-edit' });
+            const start = create('input', {
+                attrs: { type: 'time', value: entry.start, required: 'true' },
+            });
+            const end = create('input', {
+                attrs: { type: 'time', value: entry.end, required: 'true' },
+            });
+            const note = create('input', {
+                attrs: {
+                    type: 'text',
+                    value: entry.note ?? '',
+                    maxlength: '140',
+                    placeholder: 'Nota',
+                },
+            });
+            const save = create('button', {
+                className: 'btn-primary',
+                text: 'Guardar',
+                attrs: { type: 'submit' },
+            });
+            const cancel = create('button', {
+                className: 'btn-secondary',
+                text: 'Cancelar',
+                attrs: { type: 'button' },
+            });
+
+            editForm.append(start, end, note, save, cancel);
+
+            cancel.addEventListener('click', () => void loadEntries(), {
+                signal,
+            });
+            editForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                api.updateEntry(entry.id, {
+                    start: start.value,
+                    end: end.value,
+                    note: note.value,
+                })
+                    .then(emitDataChanged)
+                    .catch((error: Error) => showError(errorEl, error.message));
+            });
+
+            return editForm;
+        };
+
+        const loadEntries = async (): Promise<void> => {
+            try {
+                const entries = await api.getEntries({ date: currentDate });
+                listEl.replaceChildren(...entries.map(renderRow));
+                emptyEl.hidden = entries.length > 0;
+                totalEl.textContent = formatMinutes(
+                    entries.reduce((total, entry) => total + entry.minutes, 0),
+                );
+                showError(errorEl, null);
+            } catch (error) {
+                showError(errorEl, (error as Error).message);
+            }
+        };
+
+        taskSelect.addEventListener('change', fillSubtasks, { signal });
+
+        form.addEventListener(
+            'submit',
+            (event) => {
+                event.preventDefault();
+                api.createEntry({
+                    taskId: taskSelect.value,
+                    subtaskId: subtaskSelect.value || null,
+                    date: currentDate,
+                    start: startInput.value,
+                    end: endInput.value,
+                    note: noteInput.value,
+                })
+                    .then(() => {
+                        noteInput.value = '';
+                        startInput.value = endInput.value;
+                        endInput.value = '';
+                        emitDataChanged();
+                    })
+                    .catch((error: Error) => showError(errorEl, error.message));
+            },
+            { signal },
+        );
+
+        onDateSelected(
+            (date) => {
+                currentDate = date;
+                titleEl.textContent = `Registros · ${formatWeekday(date)}`;
+                subtitleEl.textContent = formatDateLong(date);
+                void loadEntries();
+            },
+            { signal },
+        );
+
+        onDataChanged(
+            () => {
+                void fillTasks();
+                void loadEntries();
+            },
+            { signal },
+        );
+
+        startInput.value = currentTime();
+        void fillTasks().catch((error: Error) =>
+            showError(errorEl, error.message),
+        );
+    });
+</script>
+
+<style>
+    .log-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .entry-form {
+        display: grid;
+        grid-template-columns: 1.3fr 1.5fr 7.5rem 7.5rem 1.4fr auto;
+        align-items: end;
+        gap: 0.7rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .entry-form button {
+        height: 2.4rem;
+    }
+
+    @media (max-width: 1200px) {
+        .entry-form {
+            grid-template-columns: 1fr 1fr 7.5rem 7.5rem;
+        }
+
+        .field-note {
+            grid-column: span 3;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .entry-form {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .field-task,
+        .field-note {
+            grid-column: span 2;
+        }
+    }
+
+    .entry-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .entry-list:empty {
+        margin-top: 0;
+    }
+
+    .entry-list :global(.entry-item) {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background-color: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+    }
+
+    .entry-list :global(.entry-color) {
+        width: 8px;
+        height: 32px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .entry-list :global(.entry-body) {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .entry-list :global(.entry-task) {
+        font-weight: 600;
+        font-size: 0.92rem;
+        overflow-wrap: anywhere;
+    }
+
+    .entry-list :global(.entry-hours) {
+        color: var(--color-text-muted);
+        font-size: 0.8rem;
+    }
+
+    .entry-list :global(.entry-note) {
+        color: var(--color-text-muted);
+        font-size: 0.8rem;
+        font-style: italic;
+    }
+
+    .entry-list :global(.entry-actions) {
+        display: flex;
+        gap: 0.35rem;
+        flex-shrink: 0;
+    }
+
+    .entry-list :global(.entry-edit) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .entry-list :global(.entry-edit input) {
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text);
+        padding: 0.35rem 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .entry-list :global(.entry-edit input[type='text']) {
+        flex: 1;
+        min-width: 120px;
+    }
+</style>

@@ -1,45 +1,41 @@
 /*
-	*  ------------------------------------------------------  *
-	*  -----  events.ts  --  /client/src/lib/events.ts  -----  *
-	*  ------------------------------------------------------  *
-*/
-import type { Task } from '../types/task';
+ *  ------------------------------------------------------  *
+ *  -----  events.ts  --  /client/src/lib/events.ts  -----  *
+ *  ------------------------------------------------------  *
+ */
 
 /** Eventos personalizados para la comunicación entre componentes. */
 export const APP_EVENTS = {
+    /** Se ha seleccionado un día en el calendario */
     dateSelected: 'app:date-selected',
-    tasksChanged: 'app:tasks-changed',
-    editTask: 'app:edit-task',
+    /** Han cambiado tareas, subtareas o registros de tiempo */
+    dataChanged: 'app:data-changed',
 } as const;
 
-export function emitDateSelected(date: string): void {
+export const emitDateSelected = (date: string): void => {
     document.dispatchEvent(
         new CustomEvent<string>(APP_EVENTS.dateSelected, { detail: date }),
     );
-}
+};
 
-export function emitTasksChanged(): void {
-    document.dispatchEvent(new CustomEvent(APP_EVENTS.tasksChanged));
-}
+export const emitDataChanged = (): void => {
+    document.dispatchEvent(new CustomEvent(APP_EVENTS.dataChanged));
+};
 
-export function emitEditTask(task: Task): void {
-    document.dispatchEvent(
-        new CustomEvent<Task>(APP_EVENTS.editTask, { detail: task }),
+export const onDateSelected = (
+    handler: (date: string) => void,
+    options?: AddEventListenerOptions,
+): void => {
+    document.addEventListener(
+        APP_EVENTS.dateSelected,
+        (event) => handler((event as CustomEvent<string>).detail),
+        options,
     );
-}
+};
 
-export function onDateSelected(handler: (date: string) => void): void {
-    document.addEventListener(APP_EVENTS.dateSelected, (event) => {
-        handler((event as CustomEvent<string>).detail);
-    });
-}
-
-export function onTasksChanged(handler: () => void): void {
-    document.addEventListener(APP_EVENTS.tasksChanged, handler);
-}
-
-export function onEditTask(handler: (task: Task) => void): void {
-    document.addEventListener(APP_EVENTS.editTask, (event) => {
-        handler((event as CustomEvent<Task>).detail);
-    });
-}
+export const onDataChanged = (
+    handler: () => void,
+    options?: AddEventListenerOptions,
+): void => {
+    document.addEventListener(APP_EVENTS.dataChanged, handler, options);
+};
