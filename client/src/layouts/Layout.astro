@@ -37,7 +37,7 @@ const {
             name="description"
             content="Dashboard de gestión de tareas y control del tiempo invertido"
         />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="app-favicon" />
         <script is:inline>
             (() => {
                 const key = 'theme';
@@ -51,6 +51,15 @@ const {
                           : 'dark';
                 document.documentElement.setAttribute('data-theme', theme);
                 document.documentElement.style.colorScheme = theme;
+
+                // Icono invertido respecto al tema (claro↔oscuro)
+                const favicon = document.getElementById('app-favicon');
+                if (favicon instanceof HTMLLinkElement) {
+                    favicon.href =
+                        theme === 'dark'
+                            ? '/favicon-light.svg'
+                            : '/favicon-dark.svg';
+                }
             })();
         </script>
         <ClientRouter />
@@ -286,11 +295,12 @@ const {
         --color-warning: #e5a34d;
         --radius: 10px;
         --shadow: 0 4px 16px rgb(0 0 0 / 0.35);
-        --logo-outer-top: #232737;
-        --logo-outer-bottom: #151823;
-        --logo-inner: #0f1117;
-        --logo-stroke: #2e3347;
-        --logo-ring: #8b90a3;
+        /* Icono claro sobre UI oscura */
+        --logo-outer-top: #e4e8f1;
+        --logo-outer-bottom: #d0d6e4;
+        --logo-inner: #ffffff;
+        --logo-stroke: #c4cad8;
+        --logo-ring: #5c6478;
     }
 
     [data-theme='light'] {
@@ -308,11 +318,12 @@ const {
         --color-success: #2f9e6f;
         --color-warning: #c9842a;
         --shadow: 0 4px 16px rgb(26 29 39 / 0.08);
-        --logo-outer-top: #e4e8f1;
-        --logo-outer-bottom: #d0d6e4;
-        --logo-inner: #ffffff;
-        --logo-stroke: #c4cad8;
-        --logo-ring: #5c6478;
+        /* Icono oscuro sobre UI clara */
+        --logo-outer-top: #232737;
+        --logo-outer-bottom: #151823;
+        --logo-inner: #0f1117;
+        --logo-stroke: #2e3347;
+        --logo-ring: #8b90a3;
     }
 
     * {
@@ -571,8 +582,10 @@ const {
 
     /* --------------------  View Transitions  -------------------- */
 
-    ::view-transition-old(calendar),
-    ::view-transition-new(calendar) {
+    ::view-transition-old(calendar-large),
+    ::view-transition-new(calendar-large),
+    ::view-transition-old(calendar-compact),
+    ::view-transition-new(calendar-compact) {
         animation-duration: 0.35s;
         animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
         height: 100%;

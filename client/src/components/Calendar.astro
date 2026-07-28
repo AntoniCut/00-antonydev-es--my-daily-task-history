@@ -7,7 +7,8 @@
 
 // Calendario mensual: en el dashboard ocupa todo el ancho (large). En la
 // vista de un día aparece compacto en el sidebar (flotante / arrastrable).
-// La transición entre ambos usa `transition:name="calendar"`.
+// Nombres de transición distintos: si comparten el mismo `transition:name`,
+// el morph compacto↔grande deja el panel a pantalla completa sin márgenes.
 
 interface Props {
     /** `large` = dashboard; `compact` = sidebar en vista de un día */
@@ -17,6 +18,8 @@ interface Props {
 }
 
 const { variant = 'large', selectedDate } = Astro.props;
+const transitionName =
+    variant === 'compact' ? 'calendar-compact' : 'calendar-large';
 ---
 
 <div
@@ -24,7 +27,7 @@ const { variant = 'large', selectedDate } = Astro.props;
     class:list={['calendar', 'panel', `calendar--${variant}`]}
     data-variant={variant}
     data-selected={selectedDate ?? ''}
-    transition:name="calendar"
+    transition:name={transitionName}
 >
     <div class="calendar-header" data-drag-handle>
         {
@@ -309,17 +312,8 @@ const { variant = 'large', selectedDate } = Astro.props;
                 signal,
             });
         } else {
-            root.style.position = '';
-            root.style.left = '';
-            root.style.top = '';
-            root.style.right = '';
-            root.style.bottom = '';
-            root.style.margin = '';
-            root.style.zIndex = '';
-            root.style.width = '';
-            root.style.height = '';
-            root.style.maxWidth = '';
-            root.style.maxHeight = '';
+            // Quitar restos del modo flotante (fixed / tamaño) al volver al dashboard
+            root.removeAttribute('style');
             root.classList.remove('is-draggable', 'is-dragging');
         }
 
@@ -410,12 +404,23 @@ const { variant = 'large', selectedDate } = Astro.props;
     /* ---- Variante large (dashboard) ---- */
 
     .calendar--large {
-        width: 100%;
-        height: 100%;
+        width: min(100%, 920px);
+        height: min(100%, 36rem);
+        max-width: 920px;
+        max-height: 36rem;
         min-height: 0;
+        margin-inline: auto;
         display: flex;
         flex-direction: column;
         padding: 1rem;
+        /* Por si quedara algún resto de position:fixed del modo compacto */
+        position: relative !important;
+        inset: auto !important;
+        left: auto !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        z-index: auto !important;
     }
 
     .calendar--large .calendar-header {
