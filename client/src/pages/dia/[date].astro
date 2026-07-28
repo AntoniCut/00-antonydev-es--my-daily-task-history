@@ -5,7 +5,6 @@
  *  ------------------------------------------------------------------  *
  */
 import Layout from '../../layouts/Layout.astro';
-import Calendar from '../../components/Calendar.astro';
 import DayLog from '../../components/DayLog.astro';
 import {
     formatDateLong,
@@ -45,47 +44,13 @@ const subtitle = formatDateLong(date);
     heading={heading}
     subtitle={subtitle}
     active="dashboard"
+    calendarDate={date}
 >
-    <div class="day-layout">
-        <aside class="day-calendar" aria-label="Calendario">
-            <Calendar variant="compact" selectedDate={date} />
-        </aside>
-
-        <div class="day-log-wrap">
-            <DayLog date={date} />
-        </div>
-    </div>
+    <DayLog date={date} />
 </Layout>
 
 <style>
-    .day-layout {
-        display: grid;
-        grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-        gap: 1.5rem;
-        align-items: start;
-    }
-
-    .day-calendar {
-        position: sticky;
-        top: 1rem;
-    }
-
-    .day-log-wrap {
-        min-width: 0;
-    }
-
-    .day-log-wrap :global(#day-log) {
+    :global(#day-log) {
         min-height: 28rem;
-    }
-
-    @media (max-width: 900px) {
-        .day-layout {
-            grid-template-columns: 1fr;
-        }
-
-        .day-calendar {
-            position: static;
-            max-width: 320px;
-        }
     }
 </style>

@@ -14,9 +14,18 @@ interface Props {
     active: 'dashboard' | 'tasks' | 'reports';
     /** Encaja el contenido en el viewport sin scroll de página */
     fitViewport?: boolean;
+    /** Fecha (YYYY-MM-DD): muestra el calendario compacto en el sidebar */
+    calendarDate?: string;
 }
 
-const { title, heading, subtitle, active, fitViewport = false } = Astro.props;
+const {
+    title,
+    heading,
+    subtitle,
+    active,
+    fitViewport = false,
+    calendarDate,
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -49,7 +58,7 @@ const { title, heading, subtitle, active, fitViewport = false } = Astro.props;
     </head>
     <body>
         <div class:list={['shell', { 'fit-viewport': fitViewport }]}>
-            <Sidebar active={active} />
+            <Sidebar active={active} calendarDate={calendarDate} />
 
             <div class="content">
                 <header class="page-header">

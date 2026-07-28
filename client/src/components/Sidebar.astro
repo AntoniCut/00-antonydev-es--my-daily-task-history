@@ -1,54 +1,44 @@
 ---
-
 /*
-    *  ---------------------------------------------------------------------  *
-    *  -----  Sidebar.astro  --  /client/src/components/Sidebar.astro  -----  *
-    *  ---------------------------------------------------------------------  *
-*/
+ *  ---------------------------------------------------------------------  *
+ *  -----  Sidebar.astro  --  /client/src/components/Sidebar.astro  -----  *
+ *  ---------------------------------------------------------------------  *
+ */
 
-// Navegación lateral del dashboard.
+// Navegación lateral del dashboard. En la vista de un día muestra el
+// calendario compacto debajo de Informes (flotante / arrastrable).
 
 import Logo from './Logo.astro';
+import Calendar from './Calendar.astro';
 
 interface Props {
     active: 'dashboard' | 'tasks' | 'reports';
+    /** Si hay fecha, se muestra el calendario compacto bajo la nav. */
+    calendarDate?: string;
 }
 
-const { active } = Astro.props;
+const { active, calendarDate } = Astro.props;
 
-
-/** - `Enlaces de la barra lateral` */
 const links = [
     { id: 'dashboard', href: '/', label: 'Dashboard', icon: '▤' },
     { id: 'tasks', href: '/tareas', label: 'Tareas', icon: '✎' },
     { id: 'reports', href: '/informes', label: 'Informes', icon: '↗' },
 ] as const;
-
-
 ---
 
 <aside class="sidebar">
-    
-    
     <a class="brand" href="/">
-        
         <Logo size={40} />
-        
         <span class="brand-text">
-            
             <strong>
-                MyDailyTaskHistory 
-                <br> 
+                MyDailyTaskHistory
+                <br />
                 Gestor de tareas
             </strong>
-            
             <small>Control de tiempo</small>
-
         </span>
-
     </a>
 
-    
     <nav class="nav" aria-label="Secciones">
         {
             links.map((link) => (
@@ -69,11 +59,24 @@ const links = [
         }
     </nav>
 
+    {
+        calendarDate && (
+            <div
+                class="sidebar-calendar-host"
+                id="sidebar-calendar-host"
+                aria-label="Calendario del día"
+            >
+                {/* Hueco reservado: el panel real es position:fixed y no empuja el layout */}
+                <div class="sidebar-calendar-slot" aria-hidden="true" />
+                <Calendar variant="compact" selectedDate={calendarDate} />
+            </div>
+        )
+    }
+
     <p class="sidebar-foot">Datos guardados en tu propio servidor</p>
 </aside>
 
 <style>
-    
     .sidebar {
         background-color: var(--color-surface);
         border-right: 1px solid var(--color-border);
@@ -81,6 +84,8 @@ const links = [
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
+        position: relative;
+        z-index: 20;
     }
 
     .brand {
@@ -110,6 +115,7 @@ const links = [
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
+        flex-shrink: 0;
     }
 
     .nav-link {
@@ -146,6 +152,19 @@ const links = [
         text-align: center;
     }
 
+    /* Reserva sitio en el aside; el calendario flota encima (fixed) */
+    .sidebar-calendar-host {
+        position: relative;
+        width: 100%;
+        flex-shrink: 0;
+    }
+
+    .sidebar-calendar-slot {
+        width: 268px;
+        height: 320px;
+        pointer-events: none;
+    }
+
     .sidebar-foot {
         margin-top: auto;
         color: var(--color-text-muted);
@@ -162,6 +181,11 @@ const links = [
         .nav {
             flex-direction: row;
             flex-wrap: wrap;
+        }
+
+        .sidebar-calendar-slot {
+            min-height: 0;
+            height: 0;
         }
 
         .sidebar-foot {

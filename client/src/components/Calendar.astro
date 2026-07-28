@@ -5,12 +5,12 @@
  *  -----------------------------------------------------------------------  *
  */
 
-// Calendario mensual: en el dashboard ocupa todo el ancho (large) y muestra
-// las tareas de cada día; en la vista de un día queda compacto arriba a la
-// izquierda. La transición entre ambos usa `transition:name="calendar"`.
+// Calendario mensual: en el dashboard ocupa todo el ancho (large). En la
+// vista de un día aparece compacto en el sidebar (flotante / arrastrable).
+// La transición entre ambos usa `transition:name="calendar"`.
 
 interface Props {
-    /** `large` = dashboard; `compact` = vista de un día */
+    /** `large` = dashboard; `compact` = sidebar en vista de un día */
     variant?: 'large' | 'compact';
     /** Día resaltado (YYYY-MM-DD). En compact suele venir de la URL. */
     selectedDate?: string;
@@ -26,7 +26,18 @@ const { variant = 'large', selectedDate } = Astro.props;
     data-selected={selectedDate ?? ''}
     transition:name="calendar"
 >
-    <div class="calendar-header">
+    <div class="calendar-header" data-drag-handle>
+        {
+            variant === 'compact' && (
+                <span
+                    class="calendar-drag-grip"
+                    aria-hidden="true"
+                    title="Arrastra el calendario"
+                >
+                    ⋮⋮
+                </span>
+            )
+        }
         <button
             class="nav-btn"
             type="button"
@@ -76,6 +87,7 @@ const { variant = 'large', selectedDate } = Astro.props;
     import { navigate } from 'astro:transitions/client';
     import { api } from '../lib/api';
     import { create, onPageReady, query } from '../lib/dom';
+    import { dockFixed, makeDraggable } from '../lib/draggable';
     import { onDataChanged } from '../lib/events';
     import {
         MONTH_NAMES,
@@ -279,6 +291,38 @@ const { variant = 'large', selectedDate } = Astro.props;
 
         onDataChanged(() => void refresh(), { signal });
 
+        if (variant === 'compact') {
+            const host = document.getElementById('sidebar-calendar-host');
+            const storageKey = 'calendar-compact-position';
+
+            const dock = (): void => {
+                if (host) dockFixed(root, host, storageKey);
+            };
+
+            // Anclar al hueco del sidebar (o restaurar posición guardada)
+            requestAnimationFrame(dock);
+            window.addEventListener('resize', dock, { signal });
+
+            makeDraggable(root, {
+                handle: '[data-drag-handle]',
+                storageKey,
+                signal,
+            });
+        } else {
+            root.style.position = '';
+            root.style.left = '';
+            root.style.top = '';
+            root.style.right = '';
+            root.style.bottom = '';
+            root.style.margin = '';
+            root.style.zIndex = '';
+            root.style.width = '';
+            root.style.height = '';
+            root.style.maxWidth = '';
+            root.style.maxHeight = '';
+            root.classList.remove('is-draggable', 'is-dragging');
+        }
+
         void refresh();
     });
 </script>
@@ -288,7 +332,24 @@ const { variant = 'large', selectedDate } = Astro.props;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 0.35rem;
         margin-bottom: 1rem;
+    }
+
+    .calendar-header .panel-title {
+        flex: 1;
+        text-align: center;
+        min-width: 0;
+    }
+
+    .calendar-drag-grip {
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+        letter-spacing: -0.15em;
+        line-height: 1;
+        padding: 0.2rem 0.15rem;
+        user-select: none;
+        flex-shrink: 0;
     }
 
     .nav-btn {
@@ -411,67 +472,97 @@ const { variant = 'large', selectedDate } = Astro.props;
         padding: 0.08rem 0.22rem;
     }
 
-    /* ---- Variante compact (vista día) ---- */
+    /* ---- Variante compact (sidebar, flotante) ---- */
 
     .calendar--compact {
-        width: 100%;
-        max-width: 320px;
+        /* Tamaño fijo en el aside (no crece ni encoge al arrastrar) */
+        width: 268px;
+        height: 320px;
+        max-width: 268px;
+        max-height: 320px;
+        box-sizing: border-box;
+        padding: 0.75rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .calendar--compact.is-draggable .calendar-header {
+        cursor: grab;
+    }
+
+    .calendar--compact.is-dragging {
+        cursor: grabbing;
+        box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+    }
+
+    .calendar--compact.is-dragging .calendar-header {
+        cursor: grabbing;
     }
 
     .calendar--compact .calendar-header {
-        margin-bottom: 0.65rem;
+        margin-bottom: 0.45rem;
+        flex-shrink: 0;
     }
 
     .calendar--compact .panel-title {
-        font-size: 0.92rem;
+        font-size: 0.85rem;
     }
 
     .calendar--compact .nav-btn {
-        width: 1.85rem;
-        height: 1.85rem;
-        font-size: 1rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        font-size: 0.95rem;
     }
 
     .calendar--compact .calendar-weekdays {
-        font-size: 0.62rem;
-        margin-bottom: 0.25rem;
+        font-size: 0.58rem;
+        margin-bottom: 0.2rem;
+        flex-shrink: 0;
     }
 
     .calendar--compact .calendar-grid {
+        flex: 1;
+        min-height: 0;
         gap: 2px;
+        grid-auto-rows: 1fr;
     }
 
     .calendar--compact .calendar-footer {
-        margin-top: 0.65rem;
+        margin-top: 0.45rem;
         flex-wrap: wrap;
+        flex-shrink: 0;
+        gap: 0.35rem;
     }
 
     .calendar--compact .calendar-footer .muted-text {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
     .calendar--compact .calendar-footer .btn-secondary {
-        padding: 0.35rem 0.7rem;
-        font-size: 0.78rem;
+        padding: 0.3rem 0.55rem;
+        font-size: 0.72rem;
     }
 
     .calendar--compact .calendar-grid :global(.day-empty),
     .calendar--compact .calendar-grid :global(.day-cell) {
-        aspect-ratio: 1;
+        aspect-ratio: auto;
         min-height: 0;
+        height: 100%;
     }
 
     .calendar--compact .calendar-grid :global(.day-cell) {
-        padding: 0.15rem;
+        padding: 0.1rem;
         gap: 1px;
     }
 
     .calendar--compact .calendar-grid :global(.day-number) {
-        font-size: 0.72rem;
+        font-size: 0.68rem;
     }
 
     .calendar--compact .calendar-grid :global(.day-time) {
-        font-size: 0.5rem;
+        font-size: 0.48rem;
     }
 
     /*
