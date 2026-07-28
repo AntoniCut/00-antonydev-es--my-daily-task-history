@@ -25,8 +25,8 @@ const { size = 48 } = Astro.props;
 >
     <defs>
         <linearGradient id="logo-bg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#232737"></stop>
-            <stop offset="1" stop-color="#151823"></stop>
+            <stop offset="0" stop-color="var(--logo-outer-top)"></stop>
+            <stop offset="1" stop-color="var(--logo-outer-bottom)"></stop>
         </linearGradient>
     </defs>
 
@@ -37,7 +37,7 @@ const { size = 48 } = Astro.props;
         y1="9"
         x2="22"
         y2="17"
-        stroke="#8b90a3"
+        stroke="var(--logo-ring)"
         stroke-width="3.5"
         stroke-linecap="round"></line>
     <line
@@ -45,7 +45,7 @@ const { size = 48 } = Astro.props;
         y1="9"
         x2="42"
         y2="17"
-        stroke="#8b90a3"
+        stroke="var(--logo-ring)"
         stroke-width="3.5"
         stroke-linecap="round"></line>
 
@@ -55,18 +55,18 @@ const { size = 48 } = Astro.props;
         width="40"
         height="38"
         rx="6"
-        fill="#0f1117"
-        stroke="#2e3347"
+        fill="var(--logo-inner)"
+        stroke="var(--logo-stroke)"
         stroke-width="2"></rect>
 
     <path
         d="M12 22 L12 20 A6 6 0 0 1 18 14 L46 14 A6 6 0 0 1 52 20 L52 22 Z"
-        fill="#5b8def"></path>
+        fill="var(--color-primary)"></path>
 
     <path
         d="M22 37 l7 7 l14 -15"
         fill="none"
-        stroke="#4fbf8b"
+        stroke="var(--color-success)"
         stroke-width="4.5"
         stroke-linecap="round"
         stroke-linejoin="round"></path>
@@ -76,7 +76,7 @@ const { size = 48 } = Astro.props;
     .logo {
         display: block;
         border-radius: 22%;
-        box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+        box-shadow: var(--shadow);
         flex-shrink: 0;
     }
 </style>

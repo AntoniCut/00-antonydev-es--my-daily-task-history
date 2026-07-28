@@ -27,6 +27,21 @@ const { title, heading, subtitle, active } = Astro.props;
             content="Dashboard de gestión de tareas y control del tiempo invertido"
         />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <script is:inline>
+            (() => {
+                const key = 'theme';
+                const stored = localStorage.getItem(key);
+                const theme =
+                    stored === 'light' || stored === 'dark'
+                        ? stored
+                        : window.matchMedia('(prefers-color-scheme: light)')
+                                .matches
+                          ? 'light'
+                          : 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            })();
+        </script>
         <ClientRouter />
         <title>{title}</title>
     </head>
@@ -36,8 +51,21 @@ const { title, heading, subtitle, active } = Astro.props;
 
             <div class="content">
                 <header class="page-header">
-                    <h1>{heading}</h1>
-                    <p>{subtitle}</p>
+                    <div class="page-header-text">
+                        <h1>{heading}</h1>
+                        <p>{subtitle}</p>
+                    </div>
+                    <button
+                        type="button"
+                        class="theme-toggle"
+                        id="theme-toggle"
+                        aria-label="Cambiar tema"
+                        title="Cambiar tema"
+                    >
+                        <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
+                        <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+                        <span class="theme-label" data-theme-label>Tema</span>
+                    </button>
                 </header>
                 <main class="page-main">
                     <slot />
@@ -46,6 +74,58 @@ const { title, heading, subtitle, active } = Astro.props;
         </div>
     </body>
 </html>
+
+<script>
+    import {
+        applyTheme,
+        resolveTheme,
+        toggleTheme,
+        type Theme,
+    } from '../lib/theme';
+
+    // ClientRouter reemplaza el documento: reaplicar el tema tras cada navegación.
+    const syncTheme = () => applyTheme(resolveTheme());
+    document.addEventListener('astro:after-swap', syncTheme);
+    syncTheme();
+
+    const labelFor = (theme: Theme): string =>
+        theme === 'dark' ? 'Modo oscuro' : 'Modo claro';
+
+    const syncToggle = (): void => {
+        const theme = resolveTheme();
+        const button = document.getElementById('theme-toggle');
+        if (!(button instanceof HTMLButtonElement)) return;
+
+        button.setAttribute(
+            'aria-label',
+            theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+        );
+        button.title =
+            theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+
+        const label = button.querySelector('[data-theme-label]');
+        if (label) label.textContent = labelFor(theme);
+    };
+
+    const bindToggle = (): void => {
+        const button = document.getElementById('theme-toggle');
+        if (!(button instanceof HTMLButtonElement)) return;
+        if (button.dataset.bound === 'true') {
+            syncToggle();
+            return;
+        }
+
+        button.dataset.bound = 'true';
+        button.addEventListener('click', () => {
+            toggleTheme();
+            syncToggle();
+        });
+        syncToggle();
+    };
+
+    document.addEventListener('astro:page-load', bindToggle);
+    bindToggle();
+</script>
 
 <style>
     .shell {
@@ -61,8 +141,16 @@ const { title, heading, subtitle, active } = Astro.props;
     }
 
     .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
         padding: 1.75rem 2rem 1.25rem;
         border-bottom: 1px solid var(--color-border);
+    }
+
+    .page-header-text {
+        min-width: 0;
     }
 
     .page-header h1 {
@@ -72,6 +160,50 @@ const { title, heading, subtitle, active } = Astro.props;
     .page-header p {
         color: var(--color-text-muted);
         font-size: 0.9rem;
+    }
+
+    .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+        padding: 0.5rem 0.85rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: none;
+        color: var(--color-text);
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition:
+            background-color 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .theme-toggle:hover {
+        background-color: var(--color-surface-hover);
+        border-color: var(--color-primary);
+    }
+
+    .theme-icon {
+        width: 1.1rem;
+        text-align: center;
+        line-height: 1;
+    }
+
+    .theme-icon-sun {
+        display: none;
+    }
+
+    .theme-icon-moon {
+        display: inline;
+    }
+
+    :global([data-theme='light']) .theme-icon-sun {
+        display: inline;
+    }
+
+    :global([data-theme='light']) .theme-icon-moon {
+        display: none;
     }
 
     .page-main {
@@ -94,7 +226,9 @@ const { title, heading, subtitle, active } = Astro.props;
 </style>
 
 <style is:global>
-    :root {
+    :root,
+    [data-theme='dark'] {
+        color-scheme: dark;
         --color-bg: #0f1117;
         --color-surface: #1a1d27;
         --color-surface-hover: #232737;
@@ -109,6 +243,33 @@ const { title, heading, subtitle, active } = Astro.props;
         --color-warning: #e5a34d;
         --radius: 10px;
         --shadow: 0 4px 16px rgb(0 0 0 / 0.35);
+        --logo-outer-top: #232737;
+        --logo-outer-bottom: #151823;
+        --logo-inner: #0f1117;
+        --logo-stroke: #2e3347;
+        --logo-ring: #8b90a3;
+    }
+
+    [data-theme='light'] {
+        color-scheme: light;
+        --color-bg: #eef1f7;
+        --color-surface: #ffffff;
+        --color-surface-hover: #e4e8f1;
+        --color-border: #d0d6e4;
+        --color-text: #1a1d27;
+        --color-text-muted: #5c6478;
+        --color-primary: #3d6fd9;
+        --color-primary-hover: #2f5fc4;
+        --color-danger: #d94852;
+        --color-danger-hover: #c53a44;
+        --color-success: #2f9e6f;
+        --color-warning: #c9842a;
+        --shadow: 0 4px 16px rgb(26 29 39 / 0.08);
+        --logo-outer-top: #e4e8f1;
+        --logo-outer-bottom: #d0d6e4;
+        --logo-inner: #ffffff;
+        --logo-stroke: #c4cad8;
+        --logo-ring: #5c6478;
     }
 
     * {
@@ -139,7 +300,12 @@ const { title, heading, subtitle, active } = Astro.props;
     /* Firefox */
     :root {
         scrollbar-width: thin;
-        scrollbar-color: rgb(91 141 239 / 0.7) transparent;
+        scrollbar-color: color-mix(
+                in srgb,
+                var(--color-primary) 70%,
+                transparent
+            )
+            transparent;
     }
 
     /* Chrome, Edge y Safari (documento y paneles con scroll) */
@@ -153,7 +319,11 @@ const { title, heading, subtitle, active } = Astro.props;
     }
 
     ::-webkit-scrollbar-thumb {
-        background-color: rgb(91 141 239 / 0.65);
+        background-color: color-mix(
+            in srgb,
+            var(--color-primary) 65%,
+            transparent
+        );
         border-radius: 999px;
         /* Hueco alrededor del pulgar para que "flote" sobre el track */
         border: 2px solid var(--color-bg);
@@ -162,7 +332,11 @@ const { title, heading, subtitle, active } = Astro.props;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background-color: rgb(91 141 239 / 0.9);
+        background-color: color-mix(
+            in srgb,
+            var(--color-primary) 90%,
+            transparent
+        );
     }
 
     ::-webkit-scrollbar-thumb:active {
