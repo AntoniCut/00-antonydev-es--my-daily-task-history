@@ -5,38 +5,40 @@
  *  ------------------------------------------------------------  *
  */
 import Layout from '../layouts/Layout.astro';
-import SummaryCards from '../components/SummaryCards.astro';
 import Calendar from '../components/Calendar.astro';
-import DayLog from '../components/DayLog.astro';
 ---
 
 <Layout
     title="Dashboard — Gestor de tareas"
     heading="Dashboard"
-    subtitle="Tiempo registrado hoy, esta semana y este mes"
+    subtitle="Selecciona un día para ver y registrar el tiempo"
     active="dashboard"
+    fitViewport
 >
-    <SummaryCards />
-
-    <div class="dashboard-grid">
-        <section aria-label="Calendario">
-            <Calendar />
-        </section>
-        <DayLog />
-    </div>
+    <section class="dashboard-calendar" aria-label="Calendario">
+        <Calendar variant="large" />
+    </section>
 </Layout>
 
 <style>
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: minmax(300px, 380px) 1fr;
-        gap: 1.5rem;
-        align-items: start;
+    .dashboard-calendar {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
-    @media (max-width: 1000px) {
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
+    .dashboard-calendar :global(.calendar) {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dashboard-calendar :global(.calendar-grid) {
+        flex: 1;
+        min-height: 0;
     }
 </style>

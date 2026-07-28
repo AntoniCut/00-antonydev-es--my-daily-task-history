@@ -1,42 +1,47 @@
 ---
-
 /*
-    *  -----------------------------------------------------------------------  *
-    *  -----  Calendar.astro  --  /client/src/components/Calendar.astro  -----  *
-    *  -----------------------------------------------------------------------  *
+ *  -----------------------------------------------------------------------  *
+ *  -----  Calendar.astro  --  /client/src/components/Calendar.astro  -----  *
+ *  -----------------------------------------------------------------------  *
  */
 
+// Calendario mensual: en el dashboard ocupa todo el ancho (large) y muestra
+// las tareas de cada día; en la vista de un día queda compacto arriba a la
+// izquierda. La transición entre ambos usa `transition:name="calendar"`.
 
-// Calendario mensual propio: muestra el tiempo registrado en cada día y
-// permite seleccionar el día que se consulta en el panel de registros.
+interface Props {
+    /** `large` = dashboard; `compact` = vista de un día */
+    variant?: 'large' | 'compact';
+    /** Día resaltado (YYYY-MM-DD). En compact suele venir de la URL. */
+    selectedDate?: string;
+}
 
-
+const { variant = 'large', selectedDate } = Astro.props;
 ---
 
-
-<div 
-    id="calendar" 
-    class="calendar panel"
+<div
+    id="calendar"
+    class:list={['calendar', 'panel', `calendar--${variant}`]}
+    data-variant={variant}
+    data-selected={selectedDate ?? ''}
+    transition:name="calendar"
 >
-    
     <div class="calendar-header">
-        
         <button
             class="nav-btn"
             type="button"
             data-prev
             aria-label="Mes anterior">‹</button
         >
-        
+
         <h2 class="panel-title" data-title></h2>
-        
+
         <button
             class="nav-btn"
             type="button"
             data-next
             aria-label="Mes siguiente">›</button
         >
-
     </div>
 
     <div class="calendar-weekdays">
@@ -49,40 +54,54 @@
         <span>Dom</span>
     </div>
 
-    <div 
-        class="calendar-grid" 
-        role="grid" 
-        data-grid
-    > </div>
+    <div class="calendar-grid" role="grid" data-grid></div>
 
     <footer class="calendar-footer">
-        
-        <p class="muted-text" data-month-total> </p>
-        
-        <button 
-            class="btn-secondary" 
-            type="button" 
-            data-today
-        > 
-            Hoy 
-        </button>
+        <p class="muted-text" data-month-total></p>
 
+        <div class="calendar-footer-actions">
+            {
+                variant === 'compact' && (
+                    <a class="btn-secondary calendar-month-link" href="/">
+                        Mes completo
+                    </a>
+                )
+            }
+            <button class="btn-secondary" type="button" data-today>Hoy</button>
+        </div>
     </footer>
-
 </div>
 
-
 <script>
-    
+    import { navigate } from 'astro:transitions/client';
     import { api } from '../lib/api';
     import { create, onPageReady, query } from '../lib/dom';
-    import { emitDateSelected, onDataChanged } from '../lib/events';
-    import { MONTH_NAMES, formatMinutes, todayKey } from '../lib/time';
+    import { onDataChanged } from '../lib/events';
+    import {
+        MONTH_NAMES,
+        formatMinutes,
+        monthRange,
+        todayKey,
+    } from '../lib/time';
+
+    interface DayTask {
+        id: string;
+        title: string;
+        color: string;
+    }
+
+    interface DayInfo {
+        minutes: number;
+        tasks: DayTask[];
+    }
+
+    const MAX_TASK_CHIPS = 3;
 
     onPageReady((signal) => {
         const root = document.getElementById('calendar');
         if (!root) return;
 
+        const variant = root.dataset.variant === 'compact' ? 'compact' : 'large';
         const titleEl = query<HTMLHeadingElement>(root, '[data-title]');
         const gridEl = query<HTMLDivElement>(root, '[data-grid]');
         const totalEl = query<HTMLParagraphElement>(root, '[data-month-total]');
@@ -93,36 +112,94 @@
         const today = todayKey();
         const pad = (value: number) => String(value).padStart(2, '0');
 
+        const initialSelected = root.dataset.selected || today;
         let [viewYear, viewMonth] = [
-            Number(today.slice(0, 4)),
-            Number(today.slice(5, 7)) - 1,
+            Number(initialSelected.slice(0, 4)),
+            Number(initialSelected.slice(5, 7)) - 1,
         ];
-        let selectedDate = today;
-        let minutesByDate = new Map<string, number>();
+        let selectedDate = initialSelected;
+        let daysByDate = new Map<string, DayInfo>();
+
+        const goToDay = (dateKey: string): void => {
+            selectedDate = dateKey;
+            void navigate(`/dia/${dateKey}`);
+        };
 
         const loadMonth = async (): Promise<void> => {
-            const month = `${viewYear}-${pad(viewMonth + 1)}`;
+            const monthKey = `${viewYear}-${pad(viewMonth + 1)}-01`;
+            const { from, to } = monthRange(monthKey);
             try {
-                const days = await api.getDayTotals({ month });
-                minutesByDate = new Map(
-                    days.map((day) => [day.date, day.minutes]),
-                );
+                const entries = await api.getEntries({ from, to });
+                const next = new Map<string, DayInfo>();
+
+                for (const entry of entries) {
+                    let day = next.get(entry.date);
+                    if (!day) {
+                        day = { minutes: 0, tasks: [] };
+                        next.set(entry.date, day);
+                    }
+                    day.minutes += entry.minutes;
+                    if (!day.tasks.some((task) => task.id === entry.taskId)) {
+                        day.tasks.push({
+                            id: entry.taskId,
+                            title: entry.taskTitle,
+                            color: entry.taskColor,
+                        });
+                    }
+                }
+
+                daysByDate = next;
             } catch {
-                minutesByDate = new Map();
+                daysByDate = new Map();
             }
         };
 
-        const select = (dateKey: string): void => {
-            selectedDate = dateKey;
-            emitDateSelected(dateKey);
-            render();
+        const renderTaskChips = (
+            cell: HTMLButtonElement,
+            tasks: DayTask[],
+        ): void => {
+            if (variant !== 'large' || tasks.length === 0) return;
+
+            const list = create('div', { className: 'day-tasks' });
+            for (const task of tasks.slice(0, MAX_TASK_CHIPS)) {
+                const chip = create('span', {
+                    className: 'day-task',
+                    text: task.title,
+                    title: task.title,
+                });
+                chip.style.setProperty('--task-color', task.color);
+                list.appendChild(chip);
+            }
+            if (tasks.length > MAX_TASK_CHIPS) {
+                list.appendChild(
+                    create('span', {
+                        className: 'day-task-more',
+                        text: `+${tasks.length - MAX_TASK_CHIPS}`,
+                    }),
+                );
+            }
+            cell.appendChild(list);
+        };
+
+        const renderDots = (
+            cell: HTMLButtonElement,
+            tasks: DayTask[],
+        ): void => {
+            if (variant !== 'compact' || tasks.length === 0) return;
+
+            const dots = create('div', { className: 'day-dots' });
+            for (const task of tasks.slice(0, 4)) {
+                const dot = create('span', { className: 'day-dot' });
+                dot.style.backgroundColor = task.color;
+                dots.appendChild(dot);
+            }
+            cell.appendChild(dots);
         };
 
         const render = (): void => {
             titleEl.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
             gridEl.innerHTML = '';
 
-            // Desplazamiento para que la semana empiece en lunes
             const firstWeekday =
                 (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
             const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -133,7 +210,9 @@
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateKey = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`;
-                const minutes = minutesByDate.get(dateKey) ?? 0;
+                const info = daysByDate.get(dateKey);
+                const minutes = info?.minutes ?? 0;
+                const tasks = info?.tasks ?? [];
 
                 const cell = create('button', {
                     className: 'day-cell',
@@ -149,6 +228,10 @@
                         text: String(day),
                     }),
                 );
+
+                renderTaskChips(cell, tasks);
+                renderDots(cell, tasks);
+
                 cell.appendChild(
                     create('span', {
                         className: 'day-time',
@@ -156,14 +239,14 @@
                     }),
                 );
 
-                cell.addEventListener('click', () => select(dateKey), {
+                cell.addEventListener('click', () => goToDay(dateKey), {
                     signal,
                 });
                 gridEl.appendChild(cell);
             }
 
-            const monthMinutes = [...minutesByDate.values()].reduce(
-                (total, minutes) => total + minutes,
+            const monthMinutes = [...daysByDate.values()].reduce(
+                (total, day) => total + day.minutes,
                 0,
             );
             totalEl.textContent = `Total del mes: ${formatMinutes(monthMinutes)}`;
@@ -189,29 +272,25 @@
             () => {
                 viewYear = Number(today.slice(0, 4));
                 viewMonth = Number(today.slice(5, 7)) - 1;
-                void refresh().then(() => select(today));
+                void refresh().then(() => goToDay(today));
             },
             { signal },
         );
 
         onDataChanged(() => void refresh(), { signal });
 
-        void refresh().then(() => emitDateSelected(selectedDate));
+        void refresh();
     });
-
 </script>
 
-
-
 <style>
-    
     .calendar-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
-    
+
     .nav-btn {
         background: none;
         border: 1px solid var(--color-border);
@@ -254,17 +333,153 @@
         margin-top: 1rem;
     }
 
-    /* 
-        Las celdas se crean con JS, de ahí los selectores :global() para que
-        les apliquen los estilos scoped del componente 
-    */
-
-    .calendar-grid :global(.day-empty) {
-        aspect-ratio: 1;
+    .calendar-footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
     }
 
-    .calendar-grid :global(.day-cell) {
+    .calendar-month-link {
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* ---- Variante large (dashboard) ---- */
+
+    .calendar--large {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .calendar--large .calendar-header {
+        margin-bottom: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .calendar--large .calendar-weekdays {
+        flex-shrink: 0;
+        margin-bottom: 0.3rem;
+    }
+
+    .calendar--large .calendar-grid {
+        flex: 1;
+        min-height: 0;
+        gap: 4px;
+        grid-auto-rows: 1fr;
+    }
+
+    .calendar--large .calendar-footer {
+        flex-shrink: 0;
+        margin-top: 0.55rem;
+    }
+
+    .calendar--large .calendar-grid :global(.day-empty),
+    .calendar--large .calendar-grid :global(.day-cell) {
+        min-height: 0;
+        height: 100%;
+        aspect-ratio: auto;
+    }
+
+    .calendar--large .calendar-grid :global(.day-cell) {
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 0.28rem 0.3rem 0.25rem;
+        gap: 0.15rem;
+    }
+
+    .calendar--large .calendar-grid :global(.day-number) {
+        font-size: 0.85rem;
+        font-weight: 600;
+        line-height: 1;
+        align-self: flex-start;
+    }
+
+    .calendar--large .calendar-grid :global(.day-time) {
+        margin-top: auto;
+        align-self: flex-end;
+        font-size: 0.55rem;
+    }
+
+    .calendar--large .calendar-grid :global(.day-task) {
+        font-size: 0.52rem;
+        padding: 0.08rem 0.22rem;
+    }
+
+    /* ---- Variante compact (vista día) ---- */
+
+    .calendar--compact {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .calendar--compact .calendar-header {
+        margin-bottom: 0.65rem;
+    }
+
+    .calendar--compact .panel-title {
+        font-size: 0.92rem;
+    }
+
+    .calendar--compact .nav-btn {
+        width: 1.85rem;
+        height: 1.85rem;
+        font-size: 1rem;
+    }
+
+    .calendar--compact .calendar-weekdays {
+        font-size: 0.62rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .calendar--compact .calendar-grid {
+        gap: 2px;
+    }
+
+    .calendar--compact .calendar-footer {
+        margin-top: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .calendar--compact .calendar-footer .muted-text {
+        font-size: 0.75rem;
+    }
+
+    .calendar--compact .calendar-footer .btn-secondary {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.78rem;
+    }
+
+    .calendar--compact .calendar-grid :global(.day-empty),
+    .calendar--compact .calendar-grid :global(.day-cell) {
         aspect-ratio: 1;
+        min-height: 0;
+    }
+
+    .calendar--compact .calendar-grid :global(.day-cell) {
+        padding: 0.15rem;
+        gap: 1px;
+    }
+
+    .calendar--compact .calendar-grid :global(.day-number) {
+        font-size: 0.72rem;
+    }
+
+    .calendar--compact .calendar-grid :global(.day-time) {
+        font-size: 0.5rem;
+    }
+
+    /*
+        Las celdas se crean con JS, de ahí los selectores :global() para que
+        les apliquen los estilos scoped del componente
+    */
+
+    .calendar-grid :global(.day-cell) {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -277,6 +492,7 @@
         transition:
             background-color 0.15s ease,
             border-color 0.15s ease;
+        overflow: hidden;
     }
 
     .calendar-grid :global(.day-number) {
@@ -288,6 +504,59 @@
         color: var(--color-success);
         font-weight: 600;
         line-height: 1;
+    }
+
+    .calendar-grid :global(.day-tasks) {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        width: 100%;
+        min-height: 0;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .calendar-grid :global(.day-task) {
+        display: block;
+        font-size: 0.58rem;
+        font-weight: 600;
+        line-height: 1.2;
+        padding: 0.12rem 0.28rem;
+        border-radius: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+        color: var(--color-text);
+        background-color: color-mix(
+            in srgb,
+            var(--task-color, var(--color-primary)) 28%,
+            transparent
+        );
+        border-left: 2px solid var(--task-color, var(--color-primary));
+    }
+
+    .calendar-grid :global(.day-task-more) {
+        font-size: 0.55rem;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        line-height: 1;
+        padding-inline: 0.15rem;
+    }
+
+    .calendar-grid :global(.day-dots) {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 2px;
+        max-width: 100%;
+    }
+
+    .calendar-grid :global(.day-dot) {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        flex-shrink: 0;
     }
 
     .calendar-grid :global(.day-cell:hover) {
@@ -309,11 +578,31 @@
     .calendar-grid :global(.day-cell.is-selected) {
         background-color: var(--color-primary);
         font-weight: 700;
+        color: #fff;
     }
 
     .calendar-grid :global(.day-cell.is-selected .day-time) {
         color: #fff;
     }
 
+    .calendar-grid :global(.day-cell.is-selected .day-task) {
+        background-color: rgb(255 255 255 / 0.22);
+        border-left-color: #fff;
+        color: #fff;
+    }
 
+    .calendar-grid :global(.day-cell.is-selected .day-task-more) {
+        color: rgb(255 255 255 / 0.85);
+    }
+
+    .calendar-grid :global(.day-cell.is-selected .day-dot) {
+        box-shadow: 0 0 0 1px rgb(255 255 255 / 0.5);
+    }
+
+    @media (max-width: 700px) {
+        .calendar--large .calendar-grid :global(.day-task) {
+            font-size: 0.48rem;
+            padding: 0.06rem 0.18rem;
+        }
+    }
 </style>

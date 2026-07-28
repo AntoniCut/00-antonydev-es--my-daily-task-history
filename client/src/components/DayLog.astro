@@ -1,34 +1,37 @@
 ---
-
-
 /*
-    *  -------------------------------------------------------------------  *
-    *  -----  DayLog.astro  --  /client/src/components/DayLog.astro  -----  *
-    *  -------------------------------------------------------------------  *
-*/
+ *  -------------------------------------------------------------------  *
+ *  -----  DayLog.astro  --  /client/src/components/DayLog.astro  -----  *
+ *  -------------------------------------------------------------------  *
+ */
 
+// Registros de tiempo del día, con alta rápida (tarea / subtarea + hora de
+// inicio y fin) y edición en línea. El `transition:name` anima la entrada
+// al abrir un día desde el calendario.
 
-// Registros de tiempo del día seleccionado en el calendario, con alta rápida
-// (tarea / subtarea + hora de inicio y fin) y edición en línea.
+interface Props {
+    /** Día a mostrar (YYYY-MM-DD). Si no se pasa, se usa hoy. */
+    date?: string;
+}
 
-
+const { date } = Astro.props;
 ---
 
-
-<section id="day-log" class="panel">
-    
-
+<section
+    id="day-log"
+    class="panel"
+    data-date={date ?? ''}
+    transition:name="day-log"
+>
     <header class="log-header">
-        
         <div>
             <h2 class="panel-title" data-title>Registros del día</h2>
             <p class="panel-subtitle" data-subtitle>
-                Selecciona un día en el calendario
+                Cargando registros…
             </p>
         </div>
-        
-        <span class="badge time-badge" data-total>0m</span>
 
+        <span class="badge time-badge" data-total>0m</span>
     </header>
 
 
@@ -88,12 +91,7 @@
     
     import { api } from '../lib/api';
     import { create, onPageReady, query, showError } from '../lib/dom';
-    import {
-        emitDataChanged,
-        onDataChanged,
-        onDateSelected,
-    } from '../lib/events';
-    
+    import { emitDataChanged, onDataChanged } from '../lib/events';
     import {
         currentTime,
         formatDateLong,
@@ -103,13 +101,9 @@
     } from '../lib/time';
     import type { Task, TimeEntryView } from '../types/task';
 
-
     onPageReady((signal) => {
-        
         const root = document.getElementById('day-log');
-        
-        if (!root) 
-            return;
+        if (!root) return;
 
         const titleEl = query<HTMLHeadingElement>(root, '[data-title]');
         const subtitleEl = query<HTMLParagraphElement>(root, '[data-subtitle]');
@@ -126,8 +120,13 @@
         const listEl = query<HTMLUListElement>(root, '[data-list]');
         const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
 
-        let currentDate = todayKey();
+        let currentDate = root.dataset.date || todayKey();
         let tasks: Task[] = [];
+
+        const setDateLabel = (date: string): void => {
+            titleEl.textContent = `Registros · ${formatWeekday(date)}`;
+            subtitleEl.textContent = formatDateLong(date);
+        };
 
         const fillSubtasks = (): void => {
             const task = tasks.find((item) => item.id === taskSelect.value);
@@ -340,16 +339,6 @@
             { signal },
         );
 
-        onDateSelected(
-            (date) => {
-                currentDate = date;
-                titleEl.textContent = `Registros · ${formatWeekday(date)}`;
-                subtitleEl.textContent = formatDateLong(date);
-                void loadEntries();
-            },
-            { signal },
-        );
-
         onDataChanged(
             () => {
                 void fillTasks();
@@ -358,10 +347,12 @@
             { signal },
         );
 
+        setDateLabel(currentDate);
         startInput.value = currentTime();
         void fillTasks().catch((error: Error) =>
             showError(errorEl, error.message),
         );
+        void loadEntries();
     });
 
 </script>

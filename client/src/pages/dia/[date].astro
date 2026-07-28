@@ -1,0 +1,91 @@
+---
+/*
+ *  ------------------------------------------------------------------  *
+ *  -----  [date].astro  --  /client/src/pages/dia/[date].astro  -----  *
+ *  ------------------------------------------------------------------  *
+ */
+import Layout from '../../layouts/Layout.astro';
+import Calendar from '../../components/Calendar.astro';
+import DayLog from '../../components/DayLog.astro';
+import {
+    formatDateLong,
+    formatWeekday,
+    toDateKey,
+} from '../../lib/time';
+
+/** Genera las rutas estáticas de cada día (2 años atrás → 1 año adelante). */
+export function getStaticPaths() {
+    const paths: { params: { date: string } }[] = [];
+    const start = new Date();
+    start.setFullYear(start.getFullYear() - 2);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setFullYear(end.getFullYear() + 1);
+    end.setHours(0, 0, 0, 0);
+
+    for (
+        const cursor = new Date(start);
+        cursor <= end;
+        cursor.setDate(cursor.getDate() + 1)
+    ) {
+        paths.push({ params: { date: toDateKey(cursor) } });
+    }
+
+    return paths;
+}
+
+const date = Astro.params.date!;
+const heading = formatWeekday(date);
+const subtitle = formatDateLong(date);
+---
+
+<Layout
+    title={`${heading} — Gestor de tareas`}
+    heading={heading}
+    subtitle={subtitle}
+    active="dashboard"
+>
+    <div class="day-layout">
+        <aside class="day-calendar" aria-label="Calendario">
+            <Calendar variant="compact" selectedDate={date} />
+        </aside>
+
+        <div class="day-log-wrap">
+            <DayLog date={date} />
+        </div>
+    </div>
+</Layout>
+
+<style>
+    .day-layout {
+        display: grid;
+        grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    .day-calendar {
+        position: sticky;
+        top: 1rem;
+    }
+
+    .day-log-wrap {
+        min-width: 0;
+    }
+
+    .day-log-wrap :global(#day-log) {
+        min-height: 28rem;
+    }
+
+    @media (max-width: 900px) {
+        .day-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .day-calendar {
+            position: static;
+            max-width: 320px;
+        }
+    }
+</style>
