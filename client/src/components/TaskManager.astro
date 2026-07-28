@@ -6,7 +6,7 @@
  */
 
 // Gestor completo: alta de tareas (con sus subtareas), modificación, baja
-// lógica, eliminación y registro de tiempo sobre cualquier tarea o subtarea.
+// lógica y eliminación. El tiempo se registra en el Dashboard (vista diaria).
 ---
 
 <div id="task-manager" class="manager">
@@ -80,12 +80,7 @@
     import { api } from '../lib/api';
     import { create, onPageReady, query, showError } from '../lib/dom';
     import { emitDataChanged, onDataChanged } from '../lib/events';
-    import {
-        currentTime,
-        formatMinutes,
-        monthRange,
-        todayKey,
-    } from '../lib/time';
+    import { formatMinutes } from '../lib/time';
     import type { Subtask, Task, TimeEntry } from '../types/task';
 
     onPageReady((signal) => {
@@ -120,25 +115,17 @@
             '[data-show-inactive]',
         );
 
-        const month = monthRange();
         let tasks: Task[] = [];
 
-        /* --------------------------  Totales  -------------------------- */
+        /* ----------  Totales (solo para avisos de borrado)  ----------- */
 
-        const sumEntries = (entries: TimeEntry[], onlyMonth = false): number =>
-            entries
-                .filter(
-                    (entry) =>
-                        !onlyMonth ||
-                        (entry.date >= month.from && entry.date <= month.to),
-                )
-                .reduce((total, entry) => total + entry.minutes, 0);
+        const sumEntries = (entries: TimeEntry[]): number =>
+            entries.reduce((total, entry) => total + entry.minutes, 0);
 
-        const taskMinutes = (task: Task, onlyMonth = false): number =>
-            sumEntries(task.entries, onlyMonth) +
+        const taskMinutes = (task: Task): number =>
+            sumEntries(task.entries) +
             task.subtasks.reduce(
-                (total, subtask) =>
-                    total + sumEntries(subtask.entries, onlyMonth),
+                (total, subtask) => total + sumEntries(subtask.entries),
                 0,
             );
 
@@ -213,6 +200,8 @@
         };
 
         const buildTaskEditForm = (task: Task): HTMLFormElement => {
+            
+                        
             const title = inlineInput(task.title, {
                 type: 'text',
                 maxlength: '120',
@@ -275,51 +264,6 @@
             );
         };
 
-        const buildEntryForm = (
-            task: Task,
-            subtask?: Subtask,
-        ): HTMLFormElement => {
-            const date = inlineInput(todayKey(), {
-                type: 'date',
-                required: 'true',
-                'aria-label': 'Fecha',
-            });
-            const start = inlineInput(currentTime(), {
-                type: 'time',
-                required: 'true',
-                'aria-label': 'Hora de inicio',
-            });
-            const end = inlineInput('', {
-                type: 'time',
-                required: 'true',
-                'aria-label': 'Hora final',
-            });
-            const note = inlineInput('', {
-                type: 'text',
-                maxlength: '140',
-                placeholder: 'Nota (opcional)',
-                'aria-label': 'Nota',
-            });
-
-            const legend = create('span', {
-                className: 'inline-legend',
-                text: subtask ? `⏱ ${subtask.title}` : `⏱ ${task.title}`,
-            });
-
-            return inlineForm(
-                [legend, date, start, end, note, inlineActions('Registrar')],
-                () =>
-                    api.createEntry({
-                        taskId: task.id,
-                        subtaskId: subtask?.id ?? null,
-                        date: date.value,
-                        start: start.value,
-                        end: end.value,
-                        note: note.value,
-                    }),
-            );
-        };
-
         /* -------------------------  Acciones  -------------------------- */
 
         const run = (action: Promise<unknown>): void => {
@@ -378,21 +322,6 @@
 
             const total = sumEntries(subtask.entries);
             const badges = create('div', { className: 'row-badges' });
-            badges.appendChild(
-                create('span', {
-                    className: 'badge time-badge',
-                    text: formatMinutes(total),
-                    title: 'Tiempo total registrado',
-                }),
-            );
-            if (sumEntries(subtask.entries, true)) {
-                badges.appendChild(
-                    create('span', {
-                        className: 'badge',
-                        text: `mes: ${formatMinutes(sumEntries(subtask.entries, true))}`,
-                    }),
-                );
-            }
             if (!subtask.active) {
                 badges.appendChild(
                     create('span', { className: 'badge', text: 'baja' }),
@@ -402,11 +331,6 @@
             const panelHost = create('div', { className: 'panel-host' });
             const actions = create('div', { className: 'row-actions' });
             actions.append(
-                iconButton('⏱', 'Registrar tiempo', () =>
-                    togglePanel(panelHost, 'entry', () =>
-                        buildEntryForm(task, subtask),
-                    ),
-                ),
                 iconButton('✏️', 'Modificar subtarea', () =>
                     togglePanel(panelHost, 'edit', () =>
                         buildSubtaskEditForm(task, subtask),
@@ -483,22 +407,6 @@
 
             const total = taskMinutes(task);
             const badges = create('div', { className: 'row-badges' });
-            badges.appendChild(
-                create('span', {
-                    className: 'badge time-badge',
-                    text: formatMinutes(total),
-                    title: 'Tiempo total registrado',
-                }),
-            );
-            const monthMinutes = taskMinutes(task, true);
-            if (monthMinutes) {
-                badges.appendChild(
-                    create('span', {
-                        className: 'badge',
-                        text: `mes: ${formatMinutes(monthMinutes)}`,
-                    }),
-                );
-            }
             if (task.subtasks.length) {
                 badges.appendChild(
                     create('span', {
@@ -520,9 +428,6 @@
                     togglePanel(panelHost, 'subtask', () =>
                         buildNewSubtaskForm(task),
                     ),
-                ),
-                iconButton('⏱', 'Registrar tiempo en la tarea', () =>
-                    togglePanel(panelHost, 'entry', () => buildEntryForm(task)),
                 ),
                 iconButton('✏️', 'Modificar tarea', () =>
                     togglePanel(panelHost, 'edit', () =>

@@ -48,6 +48,15 @@ const assertRange = (start: string, end: string): number => {
   return durationInMinutes(start, end);
 };
 
+/** La actividad (note) es obligatoria: describe lo que se hizo en ese tiempo. */
+const assertActivity = (value: unknown): string => {
+  const activity = typeof value === 'string' ? value.trim() : '';
+  if (!activity) {
+    throw new Error('La actividad es obligatoria: describe qué hiciste en ese tiempo');
+  }
+  return activity;
+};
+
 export class EntriesService {
   async list(filter: EntriesFilter = {}): Promise<TimeEntryView[]> {
     const tasks = await jsonStorage.readAll();
@@ -70,6 +79,7 @@ export class EntriesService {
     const start = assertTime(dto?.start, 'La hora de inicio');
     const end = assertTime(dto?.end, 'La hora final');
     const minutes = assertRange(start, end);
+    const activity = assertActivity(dto?.note);
 
     const tasks = await jsonStorage.readAll();
     const task = tasks.find((item) => item.id === dto.taskId);
@@ -87,7 +97,7 @@ export class EntriesService {
       start,
       end,
       minutes,
-      note: typeof dto.note === 'string' && dto.note.trim() ? dto.note.trim() : undefined,
+      note: activity,
       createdAt: now,
       updatedAt: now,
     };
@@ -113,9 +123,7 @@ export class EntriesService {
       entry.start = assertTime(dto.start, 'La hora de inicio');
     }
     if (dto.end !== undefined) entry.end = assertTime(dto.end, 'La hora final');
-    if (dto.note !== undefined) {
-      entry.note = dto.note.trim() || undefined;
-    }
+    if (dto.note !== undefined) entry.note = assertActivity(dto.note);
     entry.minutes = assertRange(entry.start, entry.end);
 
     const now = new Date().toISOString();

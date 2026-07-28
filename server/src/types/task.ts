@@ -80,7 +80,8 @@ export interface CreateTimeEntryDto {
   date: string;
   start: string;
   end: string;
-  note?: string;
+  /** Actividad realizada en ese tiempo (obligatoria) */
+  note: string;
 }
 
 export interface UpdateTimeEntryDto {

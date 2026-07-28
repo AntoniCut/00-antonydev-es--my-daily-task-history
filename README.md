@@ -202,12 +202,22 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 | PUT    | `/api/tasks/:taskId/subtasks/:subtaskId`          | Modificar subtarea                                 |
 | DELETE | `/api/tasks/:taskId/subtasks/:subtaskId`          | Eliminar subtarea                                  |
 | GET    | `/api/entries?date=&from=&to=&taskId=&subtaskId=` | Listar registros de tiempo                         |
-| POST   | `/api/entries`                                    | Crear `{ taskId, subtaskId?, date, start, end, note? }` |
+| POST   | `/api/entries`                                    | Crear `{ taskId, subtaskId?, date, start, end, note }` |
 | PUT    | `/api/entries/:id`                                | Modificar `{ date?, start?, end?, note? }`         |
 | DELETE | `/api/entries/:id`                                | Eliminar registro                                  |
 | GET    | `/api/reports/summary?month=YYYY-MM`              | Totales por tarea y subtarea (o `?from=&to=`)      |
 | GET    | `/api/reports/days?month=YYYY-MM`                 | Minutos por día (o `?from=&to=`)                   |
 | GET    | `/api/reports/stats?date=YYYY-MM-DD`              | Contadores de hoy, semana y mes                    |
+
+### Validaciones
+
+- El `title` de tarea es **único entre las tareas activas**: al crear o
+  renombrar con un título ya usado (sin distinguir mayúsculas ni espacios
+  extra) la API responde `400` con `Ya existe una tarea activa con el título "…"`.
+  Las tareas dadas de baja no bloquean el título.
+- En los registros de tiempo, `note` es la **actividad** realizada y es
+  **obligatoria** al crear o modificar: vacía responde `400` con
+  `La actividad es obligatoria: describe qué hiciste en ese tiempo`.
 
 ## Licencia
 

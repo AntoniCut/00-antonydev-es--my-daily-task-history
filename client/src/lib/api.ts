@@ -2,7 +2,8 @@
  *  ------------------------------------------------  *
  *  -----  api.ts  --  /client/src/lib/api.ts  -----  *
  *  ------------------------------------------------  *
- */
+
+*/
 import type {
     CreateSubtaskDto,
     CreateTaskDto,
@@ -49,6 +50,7 @@ const query = (params: Record<string, string | undefined>): string => {
     const queryString = search.toString();
     return queryString ? `?${queryString}` : '';
 };
+
 
 export const api = {
     /* ---------------------------  Tareas  --------------------------- */

@@ -2,219 +2,135 @@
   "version": 2,
   "tasks": [
     {
-      "id": "696c6e79-8d40-4cf0-bd59-7f7db36c744b",
-      "title": "Informática",
-      "description": "Formación y proyectos",
+      "id": "fe11c363-538e-4eb9-b18a-8a2215d7ca41",
+      "title": "INFORMATICA",
+      "description": "Mis desarrollos de informática.",
       "color": "#5b8def",
       "completed": false,
       "active": true,
       "subtasks": [
         {
-          "id": "4bed0726-fdc0-405c-aafa-60184e021399",
-          "title": "Udemy",
+          "id": "eb5e39b8-1f46-47ec-b1c4-48312dd9f833",
+          "title": "01 - Udemy",
           "completed": false,
           "active": true,
-          "entries": [
-            {
-              "id": "e1000001-udemy-2026-07-21",
-              "date": "2026-07-21",
-              "start": "19:00",
-              "end": "21:00",
-              "minutes": 120,
-              "note": "Curso de TypeScript — módulos 1 y 2",
-              "createdAt": "2026-07-21T21:05:00.000Z",
-              "updatedAt": "2026-07-21T21:05:00.000Z"
-            },
-            {
-              "id": "e1000002-udemy-2026-07-23",
-              "date": "2026-07-23",
-              "start": "18:30",
-              "end": "20:30",
-              "minutes": 120,
-              "note": "Práctica de generics",
-              "createdAt": "2026-07-23T20:35:00.000Z",
-              "updatedAt": "2026-07-23T20:35:00.000Z"
-            },
-            {
-              "id": "e1000003-udemy-2026-07-25",
-              "date": "2026-07-25",
-              "start": "10:00",
-              "end": "12:00",
-              "minutes": 120,
-              "createdAt": "2026-07-25T12:05:00.000Z",
-              "updatedAt": "2026-07-25T12:05:00.000Z"
-            },
-            {
-              "id": "e1000004-udemy-2026-07-27",
-              "date": "2026-07-27",
-              "start": "18:00",
-              "end": "20:30",
-              "minutes": 150,
-              "note": "Proyecto del curso",
-              "createdAt": "2026-07-27T20:35:00.000Z",
-              "updatedAt": "2026-07-27T20:35:00.000Z"
-            }
-          ],
-          "createdAt": "2026-07-27T19:56:51.562Z",
-          "updatedAt": "2026-07-27T20:35:00.000Z"
+          "entries": [],
+          "createdAt": "2026-07-28T16:21:25.608Z",
+          "updatedAt": "2026-07-28T16:21:25.608Z"
         },
         {
-          "id": "cb008f1b-0e5d-405f-ae49-7ef3c2021a7b",
-          "title": "Devtalles",
+          "id": "1f3761db-54e5-4188-8e78-3c2478e34b76",
+          "title": "02 - DevTalles",
           "completed": false,
           "active": true,
-          "entries": [
-            {
-              "id": "e2000001-devt-2026-07-22",
-              "date": "2026-07-22",
-              "start": "20:00",
-              "end": "22:00",
-              "minutes": 120,
-              "note": "NestJS — autenticación JWT",
-              "createdAt": "2026-07-22T22:05:00.000Z",
-              "updatedAt": "2026-07-22T22:05:00.000Z"
-            },
-            {
-              "id": "e2000002-devt-2026-07-24",
-              "date": "2026-07-24",
-              "start": "19:00",
-              "end": "21:30",
-              "minutes": 150,
-              "note": "WebSockets y rooms",
-              "createdAt": "2026-07-24T21:35:00.000Z",
-              "updatedAt": "2026-07-24T21:35:00.000Z"
-            },
-            {
-              "id": "e2000003-devt-2026-07-26",
-              "date": "2026-07-26",
-              "start": "11:00",
-              "end": "13:00",
-              "minutes": 120,
-              "createdAt": "2026-07-26T13:05:00.000Z",
-              "updatedAt": "2026-07-26T13:05:00.000Z"
-            }
-          ],
-          "createdAt": "2026-07-27T19:56:51.562Z",
-          "updatedAt": "2026-07-26T13:05:00.000Z"
+          "entries": [],
+          "createdAt": "2026-07-28T16:21:25.608Z",
+          "updatedAt": "2026-07-28T16:21:25.608Z"
+        },
+        {
+          "id": "667428d5-47dc-4897-b255-73eda11afa05",
+          "title": "03 - JavaScript",
+          "completed": false,
+          "active": true,
+          "entries": [],
+          "createdAt": "2026-07-28T16:21:25.608Z",
+          "updatedAt": "2026-07-28T16:21:25.608Z"
+        }
+      ],
+      "entries": [
+        {
+          "id": "ecbcadd6-527b-49ba-a63f-6d8c60e2c319",
+          "date": "2026-07-28",
+          "start": "19:10",
+          "end": "20:00",
+          "minutes": 50,
+          "note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaa\n\naaaaaaaaaaa\n\n\na\naaa\neeeeeeeeeeeeee\neeeeeeeeeeeeeee\nqqqqqqqqqqqqqqqqqqqq\n\naaaaaaaaaaaa\naaaaaaaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaa\na",
+          "createdAt": "2026-07-28T17:15:01.027Z",
+          "updatedAt": "2026-07-28T17:30:26.433Z"
+        }
+      ],
+      "createdAt": "2026-07-28T16:21:25.608Z",
+      "updatedAt": "2026-07-28T17:30:26.433Z"
+    },
+    {
+      "id": "3771a5c0-b6a0-494d-924a-f6d7e5ae0b59",
+      "title": "EXTRUCOLOR",
+      "color": "#4fbf8b",
+      "completed": false,
+      "active": true,
+      "subtasks": [
+        {
+          "id": "461ac23f-509d-4f0a-ac35-d7b4b3c4cd4d",
+          "title": "Extrucolor - Turno Mañana",
+          "completed": false,
+          "active": true,
+          "entries": [],
+          "createdAt": "2026-07-28T16:50:24.366Z",
+          "updatedAt": "2026-07-28T16:50:24.366Z"
+        },
+        {
+          "id": "10cf79a6-a1a9-4d64-b1ee-4ebaa13a7d1b",
+          "title": "Extrucolor - Turno Tarde",
+          "completed": false,
+          "active": true,
+          "entries": [],
+          "createdAt": "2026-07-28T16:50:24.366Z",
+          "updatedAt": "2026-07-28T16:50:24.366Z"
+        },
+        {
+          "id": "01ccb843-b437-4e09-ad26-cd4c3d1a1d09",
+          "title": "Extrucolor - Turno Noche",
+          "completed": false,
+          "active": true,
+          "entries": [],
+          "createdAt": "2026-07-28T16:50:24.366Z",
+          "updatedAt": "2026-07-28T16:50:24.366Z"
         }
       ],
       "entries": [],
-      "createdAt": "2026-07-27T19:56:51.562Z",
-      "updatedAt": "2026-07-27T20:35:00.000Z"
+      "createdAt": "2026-07-28T16:50:24.366Z",
+      "updatedAt": "2026-07-28T17:29:51.065Z"
     },
     {
-      "id": "4f875a5f-4acc-4f28-ac09-a8a17044c461",
-      "title": "Extracolor noche",
-      "description": "Turno de noche",
-      "color": "#3fb6c4",
-      "completed": false,
-      "active": true,
-      "subtasks": [],
-      "entries": [
-        {
-          "id": "e3000001-extc-2026-07-21",
-          "date": "2026-07-21",
-          "start": "22:00",
-          "end": "06:00",
-          "minutes": 480,
-          "note": "Turno completo",
-          "createdAt": "2026-07-22T06:10:00.000Z",
-          "updatedAt": "2026-07-22T06:10:00.000Z"
-        },
-        {
-          "id": "e3000002-extc-2026-07-23",
-          "date": "2026-07-23",
-          "start": "22:00",
-          "end": "06:00",
-          "minutes": 480,
-          "createdAt": "2026-07-24T06:10:00.000Z",
-          "updatedAt": "2026-07-24T06:10:00.000Z"
-        },
-        {
-          "id": "e3000003-extc-2026-07-25",
-          "date": "2026-07-25",
-          "start": "22:00",
-          "end": "05:30",
-          "minutes": 450,
-          "note": "Salida anticipada",
-          "createdAt": "2026-07-26T05:40:00.000Z",
-          "updatedAt": "2026-07-26T05:40:00.000Z"
-        },
-        {
-          "id": "e3000004-extc-2026-07-27",
-          "date": "2026-07-27",
-          "start": "22:00",
-          "end": "01:30",
-          "minutes": 210,
-          "note": "Media jornada",
-          "createdAt": "2026-07-27T22:05:00.000Z",
-          "updatedAt": "2026-07-27T22:05:00.000Z"
-        }
-      ],
-      "createdAt": "2026-07-27T20:08:06.637Z",
-      "updatedAt": "2026-07-27T22:05:00.000Z"
-    },
-    {
-      "id": "d5e03e40-4eee-428f-a38b-df04516c6bc7",
-      "title": "Otras Tareas",
-      "description": "Gestiones del día a día",
+      "id": "b9d536c2-8084-481c-9e8c-474b0fb8b562",
+      "title": "TAREAS CASERAS",
       "color": "#e5a34d",
       "completed": false,
       "active": true,
       "subtasks": [
         {
-          "id": "739f65c7-f9bd-425a-a57f-660f9306a469",
-          "title": "Gasolinera",
+          "id": "1f4e1551-0d1d-44d6-8691-4e85f757e31a",
+          "title": "Mantenimiento Casa",
           "completed": false,
           "active": true,
-          "entries": [
-            {
-              "id": "e4000001-gaso-2026-07-22",
-              "date": "2026-07-22",
-              "start": "08:15",
-              "end": "08:35",
-              "minutes": 20,
-              "note": "Llenar depósito",
-              "createdAt": "2026-07-22T08:40:00.000Z",
-              "updatedAt": "2026-07-22T08:40:00.000Z"
-            },
-            {
-              "id": "e4000002-gaso-2026-07-26",
-              "date": "2026-07-26",
-              "start": "17:40",
-              "end": "18:00",
-              "minutes": 20,
-              "createdAt": "2026-07-26T18:05:00.000Z",
-              "updatedAt": "2026-07-26T18:05:00.000Z"
-            }
-          ],
-          "createdAt": "2026-07-27T20:08:06.639Z",
-          "updatedAt": "2026-07-26T18:05:00.000Z"
+          "entries": [],
+          "createdAt": "2026-07-28T16:51:14.787Z",
+          "updatedAt": "2026-07-28T16:51:14.787Z"
         },
         {
-          "id": "a8b1c2d3-e4f5-6789-abcd-ef0123456789",
-          "title": "Supermercado",
+          "id": "3eefc00b-23c5-4599-8d7d-a9562c76a3ad",
+          "title": "Mantenimiento Parcela",
           "completed": false,
           "active": true,
-          "entries": [
-            {
-              "id": "e5000001-supe-2026-07-24",
-              "date": "2026-07-24",
-              "start": "18:00",
-              "end": "18:45",
-              "minutes": 45,
-              "note": "Compra semanal",
-              "createdAt": "2026-07-24T18:50:00.000Z",
-              "updatedAt": "2026-07-24T18:50:00.000Z"
-            }
-          ],
-          "createdAt": "2026-07-27T20:20:00.000Z",
-          "updatedAt": "2026-07-24T18:50:00.000Z"
+          "entries": [],
+          "createdAt": "2026-07-28T16:51:14.787Z",
+          "updatedAt": "2026-07-28T16:51:14.787Z"
         }
       ],
       "entries": [],
-      "createdAt": "2026-07-27T20:08:06.639Z",
-      "updatedAt": "2026-07-27T20:20:00.000Z"
+      "createdAt": "2026-07-28T16:51:14.787Z",
+      "updatedAt": "2026-07-28T16:51:14.787Z"
+    },
+    {
+      "id": "f7dc6ad4-6965-407a-b95e-c2e9b67429d5",
+      "title": "OTRAS TAREAS",
+      "color": "#b57bec",
+      "completed": false,
+      "active": true,
+      "subtasks": [],
+      "entries": [],
+      "createdAt": "2026-07-28T16:51:47.624Z",
+      "updatedAt": "2026-07-28T16:51:47.624Z"
     }
   ]
 }

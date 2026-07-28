@@ -1,26 +1,39 @@
 ---
+
+
 /*
- *  -------------------------------------------------------------------  *
- *  -----  DayLog.astro  --  /client/src/components/DayLog.astro  -----  *
- *  -------------------------------------------------------------------  *
- */
+    *  -------------------------------------------------------------------  *
+    *  -----  DayLog.astro  --  /client/src/components/DayLog.astro  -----  *
+    *  -------------------------------------------------------------------  *
+*/
+
 
 // Registros de tiempo del día seleccionado en el calendario, con alta rápida
 // (tarea / subtarea + hora de inicio y fin) y edición en línea.
+
+
 ---
 
+
 <section id="day-log" class="panel">
+    
+
     <header class="log-header">
+        
         <div>
             <h2 class="panel-title" data-title>Registros del día</h2>
             <p class="panel-subtitle" data-subtitle>
                 Selecciona un día en el calendario
             </p>
         </div>
+        
         <span class="badge time-badge" data-total>0m</span>
+
     </header>
 
+
     <form class="entry-form" data-form>
+        
         <div class="field field-task">
             <label for="entry-task">Tarea</label>
             <select id="entry-task" data-task required></select>
@@ -42,30 +55,37 @@
         </div>
 
         <div class="field field-note">
-            <label for="entry-note">Nota</label>
-            <input
+            <label for="entry-note">Actividad</label>
+            <textarea
                 id="entry-note"
-                type="text"
                 data-note
-                maxlength="140"
-                placeholder="Opcional"
-            />
+                rows="5"
+                placeholder="Describe qué hiciste"
+                required
+            ></textarea>
         </div>
 
         <button class="btn-primary" type="submit" data-submit>Registrar</button>
+
     </form>
 
+
     <p class="error-text" data-error role="alert" hidden></p>
+    
     <p class="muted-text" data-no-tasks hidden>
         Todavía no hay tareas: créalas en la sección <a href="/tareas">Tareas</a
         > para poder registrar tiempo.
     </p>
 
     <ul class="entry-list" data-list></ul>
+    
     <p class="empty-text" data-empty hidden>Sin registros en este día.</p>
+
 </section>
 
+
 <script>
+    
     import { api } from '../lib/api';
     import { create, onPageReady, query, showError } from '../lib/dom';
     import {
@@ -73,6 +93,7 @@
         onDataChanged,
         onDateSelected,
     } from '../lib/events';
+    
     import {
         currentTime,
         formatDateLong,
@@ -82,9 +103,13 @@
     } from '../lib/time';
     import type { Task, TimeEntryView } from '../types/task';
 
+
     onPageReady((signal) => {
+        
         const root = document.getElementById('day-log');
-        if (!root) return;
+        
+        if (!root) 
+            return;
 
         const titleEl = query<HTMLHeadingElement>(root, '[data-title]');
         const subtitleEl = query<HTMLParagraphElement>(root, '[data-subtitle]');
@@ -94,7 +119,7 @@
         const subtaskSelect = query<HTMLSelectElement>(root, '[data-subtask]');
         const startInput = query<HTMLInputElement>(root, '[data-start]');
         const endInput = query<HTMLInputElement>(root, '[data-end]');
-        const noteInput = query<HTMLInputElement>(root, '[data-note]');
+        const noteInput = query<HTMLTextAreaElement>(root, '[data-note]');
         const submitBtn = query<HTMLButtonElement>(root, '[data-submit]');
         const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
         const noTasksEl = query<HTMLParagraphElement>(root, '[data-no-tasks]');
@@ -236,14 +261,16 @@
             const end = create('input', {
                 attrs: { type: 'time', value: entry.end, required: 'true' },
             });
-            const note = create('input', {
+            const note = create('textarea', {
+                className: 'edit-activity',
                 attrs: {
-                    type: 'text',
-                    value: entry.note ?? '',
-                    maxlength: '140',
-                    placeholder: 'Nota',
+                    rows: '3',
+                    placeholder: 'Actividad',
+                    required: 'true',
+                    'aria-label': 'Actividad',
                 },
             });
+            note.value = entry.note ?? '';
             const save = create('button', {
                 className: 'btn-primary',
                 text: 'Guardar',
@@ -336,9 +363,12 @@
             showError(errorEl, error.message),
         );
     });
+
 </script>
 
+
 <style>
+    
     .log-header {
         display: flex;
         align-items: flex-start;
@@ -349,35 +379,48 @@
 
     .entry-form {
         display: grid;
-        grid-template-columns: 1.3fr 1.5fr 7.5rem 7.5rem 1.4fr auto;
+        grid-template-columns: 7.5rem 7.5rem minmax(0, 1fr);
         align-items: end;
         gap: 0.7rem;
         padding-bottom: 1rem;
         border-bottom: 1px solid var(--color-border);
     }
 
-    .entry-form button {
-        height: 2.4rem;
+    /* Tarea y Subtarea ocupan cada una una fila completa (una debajo de
+       otra) para que el contenido del select no quede cortado */
+    .entry-form .field-task {
+        grid-column: 1 / -1;
     }
 
-    @media (max-width: 1200px) {
-        .entry-form {
-            grid-template-columns: 1fr 1fr 7.5rem 7.5rem;
-        }
+    /* La Actividad ocupa su propia fila completa (textarea alto) */
+    .entry-form .field-note {
+        grid-column: 1 / -1;
+    }
 
-        .field-note {
-            grid-column: span 3;
-        }
+    /* El botón Registrar ocupa su propia fila completa */
+    .entry-form [data-submit] {
+        grid-column: 1 / -1;
+    }
+
+    .entry-form select,
+    .entry-form input,
+    .entry-form textarea {
+        width: 100%;
+    }
+
+    /* El textarea de Actividad es alto y no redimensionable */
+    .entry-form textarea {
+        resize: none;
+        line-height: 1.45;
+    }
+
+    .entry-form button {
+        height: 2.4rem;
     }
 
     @media (max-width: 600px) {
         .entry-form {
             grid-template-columns: 1fr 1fr;
-        }
-
-        .field-task,
-        .field-note {
-            grid-column: span 2;
         }
     }
 
@@ -432,6 +475,9 @@
         color: var(--color-text-muted);
         font-size: 0.8rem;
         font-style: italic;
+        /* Respeta los saltos de línea escritos en el textarea */
+        white-space: pre-line;
+        overflow-wrap: anywhere;
     }
 
     .entry-list :global(.entry-actions) {
@@ -448,7 +494,8 @@
         width: 100%;
     }
 
-    .entry-list :global(.entry-edit input) {
+    .entry-list :global(.entry-edit input),
+    .entry-list :global(.entry-edit textarea) {
         background-color: var(--color-surface);
         border: 1px solid var(--color-border);
         border-radius: 6px;
@@ -457,8 +504,11 @@
         font-size: 0.85rem;
     }
 
-    .entry-list :global(.entry-edit input[type='text']) {
-        flex: 1;
-        min-width: 120px;
+    /* La Actividad en la edición: fila completa, alto y no redimensionable */
+    .entry-list :global(.entry-edit textarea) {
+        width: 100%;
+        resize: none;
+        line-height: 1.45;
     }
+    
 </style>

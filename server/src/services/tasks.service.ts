@@ -32,6 +32,32 @@ const optionalText = (value: unknown): string | undefined =>
 const byCreatedAt = (a: { createdAt: string }, b: { createdAt: string }): number =>
   a.createdAt.localeCompare(b.createdAt);
 
+/** Normaliza un título para compararlo sin distinguir mayúsculas ni espacios repetidos. */
+const normalizeTitle = (title: string): string =>
+  title.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * Impide títulos duplicados: lanza un error si ya existe otra tarea activa
+ * con el mismo título normalizado. `excludeId` ignora la propia tarea al
+ * renombrarla. Las tareas dadas de baja no bloquean el título.
+ */
+const assertUniqueActiveTitle = (
+  tasks: Task[],
+  title: string,
+  excludeId?: string,
+): void => {
+  const normalized = normalizeTitle(title);
+  const duplicated = tasks.some(
+    (task) =>
+      task.id !== excludeId &&
+      task.active &&
+      normalizeTitle(task.title) === normalized,
+  );
+  if (duplicated) {
+    throw new Error(`Ya existe una tarea activa con el título "${title}"`);
+  }
+};
+
 export class TasksService {
   /** Tareas ordenadas por antigüedad; las dadas de baja quedan al final. */
   async getAll(includeInactive = true): Promise<Task[]> {
@@ -49,6 +75,7 @@ export class TasksService {
   async create(dto: CreateTaskDto): Promise<Task> {
     const title = requireTitle(dto?.title);
     const tasks = await jsonStorage.readAll();
+    assertUniqueActiveTitle(tasks, title);
     const now = new Date().toISOString();
 
     const subtaskTitles = Array.isArray(dto.subtasks) ? dto.subtasks : [];
@@ -81,7 +108,11 @@ export class TasksService {
     const task = tasks.find((item) => item.id === id);
     if (!task) return undefined;
 
-    if (dto.title !== undefined) task.title = requireTitle(dto.title);
+    if (dto.title !== undefined) {
+      const title = requireTitle(dto.title);
+      assertUniqueActiveTitle(tasks, title, id);
+      task.title = title;
+    }
     if (dto.description !== undefined) {
       task.description = optionalText(dto.description);
     }

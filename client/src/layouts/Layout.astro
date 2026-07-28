@@ -134,6 +134,45 @@ const { title, heading, subtitle, active } = Astro.props;
         cursor: pointer;
     }
 
+    /* ----------------------  Scroll personalizado  ---------------------- */
+
+    /* Firefox */
+    :root {
+        scrollbar-width: thin;
+        scrollbar-color: rgb(91 141 239 / 0.7) transparent;
+    }
+
+    /* Chrome, Edge y Safari (documento y paneles con scroll) */
+    ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: rgb(91 141 239 / 0.65);
+        border-radius: 999px;
+        /* Hueco alrededor del pulgar para que "flote" sobre el track */
+        border: 2px solid var(--color-bg);
+        background-clip: padding-box;
+        min-height: 3rem;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(91 141 239 / 0.9);
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+        background-color: var(--color-primary-hover);
+    }
+
+    ::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
     /* Las reglas de layout de .field y compañía ganan al `display: none` que
      el navegador aplica a [hidden], así que se refuerza aquí */
     [hidden] {

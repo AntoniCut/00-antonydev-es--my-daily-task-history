@@ -1,29 +1,44 @@
 ---
+
+
 /*
  *  -----------------------------------------------------------------------  *
  *  -----  Calendar.astro  --  /client/src/components/Calendar.astro  -----  *
  *  -----------------------------------------------------------------------  *
  */
 
+
 // Calendario mensual propio: muestra el tiempo registrado en cada día y
 // permite seleccionar el día que se consulta en el panel de registros.
+
+
 ---
 
-<div id="calendar" class="calendar panel">
+
+
+<div 
+    id="calendar" 
+    class="calendar panel"
+>
+    
     <div class="calendar-header">
+        
         <button
             class="nav-btn"
             type="button"
             data-prev
             aria-label="Mes anterior">‹</button
         >
+        
         <h2 class="panel-title" data-title></h2>
+        
         <button
             class="nav-btn"
             type="button"
             data-next
             aria-label="Mes siguiente">›</button
         >
+
     </div>
 
     <div class="calendar-weekdays">
@@ -36,15 +51,31 @@
         <span>Dom</span>
     </div>
 
-    <div class="calendar-grid" role="grid" data-grid></div>
+    <div 
+        class="calendar-grid" 
+        role="grid" 
+        data-grid
+    > </div>
 
     <footer class="calendar-footer">
-        <p class="muted-text" data-month-total></p>
-        <button class="btn-secondary" type="button" data-today>Hoy</button>
+        
+        <p class="muted-text" data-month-total> </p>
+        
+        <button 
+            class="btn-secondary" 
+            type="button" 
+            data-today
+        > 
+            Hoy 
+        </button>
+
     </footer>
+
 </div>
 
+
 <script>
+    
     import { api } from '../lib/api';
     import { create, onPageReady, query } from '../lib/dom';
     import { emitDateSelected, onDataChanged } from '../lib/events';
@@ -169,16 +200,20 @@
 
         void refresh().then(() => emitDateSelected(selectedDate));
     });
+
 </script>
 
+
+
 <style>
+    
     .calendar-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
     }
-
+    
     .nav-btn {
         background: none;
         border: 1px solid var(--color-border);
@@ -221,8 +256,11 @@
         margin-top: 1rem;
     }
 
-    /* Las celdas se crean con JS, de ahí los selectores :global() para que
-     les apliquen los estilos scoped del componente */
+    /* 
+        Las celdas se crean con JS, de ahí los selectores :global() para que
+        les apliquen los estilos scoped del componente 
+    */
+
     .calendar-grid :global(.day-empty) {
         aspect-ratio: 1;
     }
@@ -278,4 +316,6 @@
     .calendar-grid :global(.day-cell.is-selected .day-time) {
         color: #fff;
     }
+
+
 </style>
