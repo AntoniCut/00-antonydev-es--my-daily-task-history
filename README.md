@@ -1,9 +1,8 @@
-# My Daily Task History  -  Gestor de tareas y tiempo
+# MyDailyTaskHistory — Gestor de tareas y tiempo
 
 Dashboard administrativo para gestionar tareas con subtareas y saber cuánto
-tiempo inviertes en cada una. Cada subtarea acumula registros con **hora de
-inicio y hora final**, y la aplicación calcula el tiempo por día, semana, mes o
-año.
+tiempo inviertes en cada una. Cada registro lleva **hora de inicio, hora final
+y actividad**, y la aplicación calcula el tiempo por día, semana, mes o año.
 
 ```
 Informática (tarea)
@@ -21,17 +20,21 @@ Otras Tareas (tarea)
 - **Bajas**: dar de baja tareas o subtareas conservando su histórico de tiempo
   (se pueden volver a dar de alta).
 - **Modificar**: título, descripción y color de la tarea; título de la subtarea;
-  fecha, horas y nota de cada registro de tiempo.
+  fecha, horas y actividad de cada registro de tiempo.
 - **Eliminar**: borrado definitivo de tareas, subtareas o registros.
-- **Registrar tiempo**: hora de inicio y hora final en un día concreto, sobre
-  una subtarea o directamente sobre la tarea. Los tramos que cruzan medianoche
-  (22:00 → 01:30) se calculan correctamente.
+- **Registrar tiempo** (en el Dashboard): hora de inicio y hora final en un día
+  concreto, sobre una subtarea o directamente sobre la tarea, con una
+  **actividad** obligatoria que describe qué se hizo. Los tramos que cruzan
+  medianoche (22:00 → 01:30) se calculan correctamente.
 - **Consultar**: contadores de hoy/semana/mes, calendario con el tiempo de cada
   día e informes por periodo con exportación a CSV.
+- **Tema claro / oscuro**: interruptor en la cabecera; la preferencia se guarda
+  en el navegador (si no hay, se usa la del sistema).
 
 ## Stack
 
-- **Frontend**: [Astro](https://astro.build/) + TypeScript (CSS scoped, interactividad con scripts vanilla)
+- **Frontend**: [Astro](https://astro.build/) + TypeScript (CSS scoped, temas
+  claro/oscuro, interactividad con scripts vanilla)
 - **Backend**: Node.js + Express + TypeScript (API REST)
 - **Persistencia**: archivo JSON (`server/data/tasks.json`)
 - **Monorepo**: pnpm workspaces (`client` + `server`)
@@ -118,8 +121,8 @@ pnpm --filter client run format:check
 
 | Sección   | Ruta        | Contenido                                                                 |
 | --------- | ----------- | ------------------------------------------------------------------------- |
-| Dashboard | `/`         | Tiempo de hoy/semana/mes, calendario y registros del día seleccionado     |
-| Tareas    | `/tareas`   | Altas, bajas, modificaciones, eliminación y registro de tiempo            |
+| Dashboard | `/`         | Tiempo de hoy/semana/mes, calendario y registros del día (alta/edición)   |
+| Tareas    | `/tareas`   | Altas, bajas, modificaciones y eliminación de tareas y subtareas          |
 | Informes  | `/informes` | Totales por tarea y subtarea del periodo, reparto por día y export a CSV  |
 
 ## Estructura
@@ -131,8 +134,8 @@ my-daily-task-history/
 │   └── src/
 │       ├── components/     # Sidebar, SummaryCards, Calendar, DayLog,
 │       │                   # TaskManager, ReportPanel, Logo
-│       ├── layouts/        # Layout con la barra lateral y los estilos globales
-│       ├── lib/            # api.ts, events.ts, time.ts, dom.ts
+│       ├── layouts/        # Layout: shell, tema claro/oscuro y estilos globales
+│       ├── lib/            # api.ts, events.ts, time.ts, dom.ts, theme.ts
 │       ├── pages/          # index (dashboard), tareas, informes
 │       └── types/
 └── server/                 # Express (:3001) — API; tras build también sirve el frontend
@@ -155,7 +158,7 @@ interface TimeEntry {
     start: string; // "HH:MM"
     end: string; // "HH:MM"
     minutes: number; // lo calcula el servidor
-    note?: string;
+    note: string; // actividad realizada (obligatoria)
     createdAt: string;
     updatedAt: string;
 }

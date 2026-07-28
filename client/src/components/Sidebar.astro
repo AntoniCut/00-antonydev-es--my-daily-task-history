@@ -1,9 +1,10 @@
 ---
+
 /*
- *  ---------------------------------------------------------------------  *
- *  -----  Sidebar.astro  --  /client/src/components/Sidebar.astro  -----  *
- *  ---------------------------------------------------------------------  *
- */
+    *  ---------------------------------------------------------------------  *
+    *  -----  Sidebar.astro  --  /client/src/components/Sidebar.astro  -----  *
+    *  ---------------------------------------------------------------------  *
+*/
 
 // Navegación lateral del dashboard.
 
@@ -15,22 +16,39 @@ interface Props {
 
 const { active } = Astro.props;
 
+
+/** - `Enlaces de la barra lateral` */
 const links = [
     { id: 'dashboard', href: '/', label: 'Dashboard', icon: '▤' },
     { id: 'tasks', href: '/tareas', label: 'Tareas', icon: '✎' },
     { id: 'reports', href: '/informes', label: 'Informes', icon: '↗' },
 ] as const;
+
+
 ---
 
 <aside class="sidebar">
+    
+    
     <a class="brand" href="/">
+        
         <Logo size={40} />
+        
         <span class="brand-text">
-            <strong>Gestor de tareas</strong>
+            
+            <strong>
+                MyDailyTaskHistory 
+                <br> 
+                Gestor de tareas
+            </strong>
+            
             <small>Control de tiempo</small>
+
         </span>
+
     </a>
 
+    
     <nav class="nav" aria-label="Secciones">
         {
             links.map((link) => (
@@ -55,6 +73,7 @@ const links = [
 </aside>
 
 <style>
+    
     .sidebar {
         background-color: var(--color-surface);
         border-right: 1px solid var(--color-border);
@@ -67,7 +86,7 @@ const links = [
     .brand {
         display: flex;
         align-items: center;
-        gap: 0.7rem;
+        gap: 3rem;
         color: inherit;
         text-decoration: none;
     }

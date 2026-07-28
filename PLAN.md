@@ -1,16 +1,16 @@
 # PLAN — my-daily-task-history
 
-Dashboard administrativo para gestionar tareas con subtareas y controlar el
-tiempo invertido en cada una. Cada subtarea acumula **registros de tiempo**
-(hora de inicio y hora final de un día concreto), y con ellos se calcula el
-tiempo dedicado por día, semana, mes o año.
+**MyDailyTaskHistory** — dashboard administrativo para gestionar tareas con
+subtareas y controlar el tiempo invertido en cada una. Cada registro acumula
+**hora de inicio, hora final y actividad** de un día concreto, y con ellos se
+calcula el tiempo dedicado por día, semana, mes o año.
 
 ## Stack
 
 - **Frontend**: Astro + TypeScript. CSS con *scoped styles* en cada componente y
-  unas pocas utilidades globales en `Layout.astro`. Sin frameworks UI: la
-  interactividad se hace con TypeScript vanilla en los `<script>` de los
-  componentes Astro.
+  estilos globales en `Layout.astro` (temas claro/oscuro, scroll personalizado).
+  Sin frameworks UI: la interactividad se hace con TypeScript vanilla en los
+  `<script>` de los componentes Astro.
 - **Backend**: Node.js + Express + TypeScript (API REST).
 - **Persistencia**: archivo JSON plano (`server/data/tasks.json`).
 
@@ -21,18 +21,19 @@ Monorepo con pnpm workspaces (declarados en `pnpm-workspace.yaml`):
 ```
 my-daily-task-history/
 ├── PLAN.md
+├── README.md
 ├── package.json              # Workspaces + scripts raíz (concurrently)
-├── client/                   # Astro (puerto 4321)
+├── client/                   # Astro (puerto 4321 en dev)
 │   ├── astro.config.mjs      # Proxy /api → http://localhost:3001
 │   └── src/
-│       ├── layouts/Layout.astro   # Shell del dashboard + estilos globales
+│       ├── layouts/Layout.astro   # Shell del dashboard, temas y estilos globales
 │       ├── pages/
 │       │   ├── index.astro        # Dashboard (contadores, calendario, día)
 │       │   ├── tareas.astro       # Gestor de tareas y subtareas
 │       │   └── informes.astro     # Informes por periodo
 │       ├── components/
 │       │   ├── Logo.astro
-│       │   ├── Sidebar.astro       # Navegación lateral
+│       │   ├── Sidebar.astro       # Marca + navegación lateral
 │       │   ├── SummaryCards.astro  # Hoy / semana / mes / activas
 │       │   ├── Calendar.astro      # Calendario con el tiempo de cada día
 │       │   ├── DayLog.astro        # Registros del día + alta rápida
@@ -42,7 +43,8 @@ my-daily-task-history/
 │       │   ├── api.ts             # Cliente fetch hacia la API
 │       │   ├── events.ts          # Eventos custom entre componentes
 │       │   ├── time.ts            # Fechas, rangos y formato de duraciones
-│       │   └── dom.ts             # Init por página y helpers de DOM
+│       │   ├── dom.ts             # Init por página y helpers de DOM
+│       │   └── theme.ts           # Modo claro / oscuro (localStorage)
 │       └── types/task.ts
 └── server/                   # Express (puerto 3001)
     ├── data/tasks.json       # Almacenamiento (formato v2)
@@ -56,8 +58,8 @@ my-daily-task-history/
         │   ├── entries.ts    # Recorrido del árbol de registros
         │   └── colors.ts     # Paleta de colores de las tareas
         ├── services/
-        │   ├── tasks.service.ts    # Tareas y subtareas
-        │   ├── entries.service.ts  # Registros de tiempo
+        │   ├── tasks.service.ts    # Tareas y subtareas (título único)
+        │   ├── entries.service.ts  # Registros de tiempo (actividad obligatoria)
         │   └── reports.service.ts  # Agregados y contadores
         ├── controllers/
         │   ├── tasks.controller.ts
@@ -82,7 +84,7 @@ interface TimeEntry {
   start: string;     // "HH:MM"
   end: string;       // "HH:MM"
   minutes: number;   // calculado en el servidor
-  note?: string;
+  note: string;      // actividad realizada (obligatoria)
   createdAt: string;
   updatedAt: string;
 }
@@ -130,6 +132,13 @@ Detalles del cálculo de tiempo:
 - Baja lógica (`active: false`) frente a borrado: la baja conserva el histórico
   de tiempo; `DELETE` lo elimina definitivamente.
 
+### Reglas de validación
+
+- El `title` de tarea es **único entre las tareas activas** (sin distinguir
+  mayúsculas ni espacios extra). Las dadas de baja no bloquean el título.
+- En los registros, `note` es la **actividad** realizada y es **obligatoria**
+  al crear o modificar.
+
 ### Archivo de datos y migración
 
 `server/data/tasks.json` usa el formato `{ "version": 2, "tasks": [...] }`. Al
@@ -152,7 +161,7 @@ fechas de v1 no se convierten en registros de tiempo porque no guardaban horas.
 | PUT    | `/api/tasks/:taskId/subtasks/:subtaskId`     | Modificar subtarea (`title`, `completed`, `active`)|
 | DELETE | `/api/tasks/:taskId/subtasks/:subtaskId`     | Eliminar subtarea                                  |
 | GET    | `/api/entries?date=&from=&to=&taskId=&subtaskId=` | Listar registros de tiempo                    |
-| POST   | `/api/entries`                               | Crear `{ taskId, subtaskId?, date, start, end, note? }` |
+| POST   | `/api/entries`                               | Crear `{ taskId, subtaskId?, date, start, end, note }` |
 | PUT    | `/api/entries/:id`                           | Modificar `{ date?, start?, end?, note? }`         |
 | DELETE | `/api/entries/:id`                           | Eliminar registro                                  |
 | GET    | `/api/reports/summary?from=&to=` o `?month=` | Totales por tarea y subtarea del periodo           |
@@ -163,19 +172,34 @@ Las validaciones devuelven `400` con `{ error }`; lo inexistente, `404`.
 
 ## Funcionamiento de la UI
 
-Tres secciones accesibles desde la barra lateral:
+Tres secciones accesibles desde la barra lateral (**MyDailyTaskHistory —
+Gestor de tareas**):
 
 1. **Dashboard** (`/`): tarjetas con el tiempo de hoy, la semana y el mes;
    calendario mensual que muestra el tiempo registrado en cada día; y el panel
-   del día seleccionado, donde se dan de alta registros (tarea, subtarea, hora
-   de inicio, hora final y nota) y se editan o eliminan los existentes.
+   del día seleccionado (`DayLog`), donde se dan de alta registros (tarea,
+   subtarea, hora de inicio, hora final y actividad) y se editan o eliminan los
+   existentes. **El tiempo solo se registra aquí**, no en la vista de Tareas.
 2. **Tareas** (`/tareas`): alta de tareas indicando sus subtareas en el mismo
    formulario, y árbol con todas las tareas. Cada fila permite añadir subtarea,
-   registrar tiempo, modificar, dar de baja o de alta y eliminar. Los totales
-   se muestran como distintivos (total histórico y del mes en curso).
+   modificar, dar de baja o de alta y eliminar.
 3. **Informes** (`/informes`): selector de periodo (esta semana, semana
    anterior, este mes, mes anterior, este año o rango personalizado) con el
    reparto por tarea y subtarea, el reparto por día y exportación a CSV.
+
+### Tema claro / oscuro
+
+- Toggle en la cabecera de cada página (`Layout.astro`).
+- Preferencia en `localStorage` (`theme`); si no hay, se usa la del sistema.
+- Script inline en el `<head>` aplica el tema antes del primer paint (evita
+  parpadeo). `lib/theme.ts` resuelve, aplica y alterna el tema; se re-sincroniza
+  tras navegaciones de `ClientRouter` (`astro:after-swap` / `astro:page-load`).
+- Variables CSS en `[data-theme='dark']` y `[data-theme='light']`.
+
+### Otros detalles de UI
+
+- Scroll personalizado (pulgar azul, visible solo cuando hay desbordamiento).
+- Shell en grid: sidebar ~300px + contenido.
 
 Comunicación entre componentes mediante eventos en `document`:
 `app:date-selected` (día elegido en el calendario) y `app:data-changed` (tras
@@ -197,7 +221,8 @@ pnpm dev            # Arranca server (3001) y client (4321) a la vez
 pnpm dev:server     # Solo la API
 pnpm dev:client     # Solo el frontend
 pnpm build          # Compila server (tsc) y client (astro build)
-pnpm start          # Arranca el servidor compilado (producción)
+pnpm preview        # Producción local: Express sirve frontend + API en :3001
+pnpm start          # Igual que preview
 ```
 
 ## Futuras mejoras (pendientes)
