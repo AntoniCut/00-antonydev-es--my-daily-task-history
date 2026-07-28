@@ -45,12 +45,15 @@ const subtitle = formatDateLong(date);
     subtitle={subtitle}
     active="dashboard"
     calendarDate={date}
+    fitViewport
 >
     <DayLog date={date} />
 </Layout>
 
 <style>
     :global(#day-log) {
-        min-height: 28rem;
+        flex: 1;
+        min-height: 0;
+        height: 100%;
     }
 </style>
