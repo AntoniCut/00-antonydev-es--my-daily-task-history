@@ -262,49 +262,82 @@
             }
         };
 
-        const exportCsv = (): void => {
-            if (!summary) return;
+        /** Celda CSV segura para Excel (comillas dobles escapadas). */
+        const csvCell = (value: string): string =>
+            `"${value.replaceAll('"', '""')}"`;
 
-            const rows = [
-                ['Tarea', 'Subtarea', 'Minutos', 'Horas', 'Registros'],
-            ];
-            for (const task of summary.tasks) {
-                if (!task.minutes) continue;
-                if (task.directMinutes) {
-                    rows.push([
-                        task.title,
-                        '',
-                        String(task.directMinutes),
-                        formatHours(task.directMinutes),
-                        '',
-                    ]);
-                }
-                for (const subtask of task.subtasks) {
-                    if (!subtask.minutes) continue;
-                    rows.push([
-                        task.title,
-                        subtask.title,
-                        String(subtask.minutes),
-                        formatHours(subtask.minutes),
-                        String(subtask.entries),
-                    ]);
-                }
-            }
+        const hoursForCsv = (minutes: number): string =>
+            (minutes / 60).toFixed(2).replace('.', ',');
 
+        const downloadCsv = (filename: string, rows: string[][]): void => {
             const csv = rows
-                .map((row) => row.map((cell) => `"${cell}"`).join(';'))
-                .join('\n');
+                .map((row) => row.map(csvCell).join(';'))
+                .join('\r\n');
             const url = URL.createObjectURL(
-                new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }),
+                new Blob([`\uFEFF${csv}`], {
+                    type: 'text/csv;charset=utf-8;',
+                }),
             );
             const link = create('a', {
-                attrs: {
-                    href: url,
-                    download: `tiempo_${summary.from ?? 'inicio'}_${summary.to ?? 'fin'}.csv`,
-                },
+                attrs: { href: url, download: filename },
             });
+            // Hay que insertarlo en el DOM; si no, algunos navegadores
+            // descargan un archivo vacío o solo con la cabecera.
+            link.style.display = 'none';
+            document.body.appendChild(link);
             link.click();
-            URL.revokeObjectURL(url);
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+        };
+
+        const exportCsv = async (): Promise<void> => {
+            if (!summary) return;
+
+            try {
+                const entries = await api.getEntries({
+                    from: summary.from,
+                    to: summary.to,
+                });
+
+                if (entries.length === 0) {
+                    showError(
+                        errorEl,
+                        'No hay registros para exportar en este periodo.',
+                    );
+                    return;
+                }
+
+                const rows = [
+                    [
+                        'Fecha',
+                        'Inicio',
+                        'Fin',
+                        'Tarea',
+                        'Subtarea',
+                        'Minutos',
+                        'Horas',
+                        'Actividad',
+                    ],
+                    ...entries.map((entry) => [
+                        entry.date,
+                        entry.start,
+                        entry.end,
+                        entry.taskTitle,
+                        entry.subtaskTitle ?? '',
+                        String(entry.minutes),
+                        hoursForCsv(entry.minutes),
+                        (entry.note ?? '').replaceAll('\r\n', '\n'),
+                    ]),
+                ];
+
+                downloadCsv(
+                    `tiempo_${summary.from ?? 'inicio'}_${summary.to ?? 'fin'}.csv`,
+                    rows,
+                );
+                showError(errorEl, null);
+            } catch (error) {
+                showError(errorEl, (error as Error).message);
+            }
         };
 
         rangeSelect.addEventListener(
@@ -326,7 +359,13 @@
             { signal },
         );
 
-        exportBtn.addEventListener('click', exportCsv, { signal });
+        exportBtn.addEventListener(
+            'click',
+            () => {
+                void exportCsv();
+            },
+            { signal },
+        );
         onDataChanged(() => void load(), { signal });
 
         void load();

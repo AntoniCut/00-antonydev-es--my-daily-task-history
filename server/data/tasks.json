@@ -43,36 +43,14 @@
           "title": "03 - JavaScript",
           "completed": false,
           "active": true,
-          "entries": [
-            {
-              "id": "05b29edd-4e88-4273-8322-70ac3dc51f11",
-              "date": "2026-07-28",
-              "start": "21:40",
-              "end": "22:50",
-              "minutes": 70,
-              "note": "aaaaaaa\naaaaaaaaaaaa\naaaaaaaaaaaaaa\naaaaaaaaaaaa\naaaaaaaaaaa\naaaaaaaaa\n\n\n\nrrrrrrrrrrrrrr",
-              "createdAt": "2026-07-28T19:45:55.222Z",
-              "updatedAt": "2026-07-28T19:45:55.222Z"
-            }
-          ],
+          "entries": [],
           "createdAt": "2026-07-28T16:21:25.608Z",
           "updatedAt": "2026-07-28T16:21:25.608Z"
         }
       ],
-      "entries": [
-        {
-          "id": "ecbcadd6-527b-49ba-a63f-6d8c60e2c319",
-          "date": "2026-07-28",
-          "start": "19:10",
-          "end": "20:00",
-          "minutes": 50,
-          "note": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaa\n\naaaaaaaaaaa\n\n\na\naaa\neeeeeeeeeeeeee\neeeeeeeeeeeeeee\nqqqqqqqqqqqqqqqqqqqq\n\naaaaaaaaaaaa\naaaaaaaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaa\na",
-          "createdAt": "2026-07-28T17:15:01.027Z",
-          "updatedAt": "2026-07-28T17:30:26.433Z"
-        }
-      ],
+      "entries": [],
       "createdAt": "2026-07-28T16:21:25.608Z",
-      "updatedAt": "2026-07-29T23:08:04.813Z"
+      "updatedAt": "2026-07-29T23:36:21.689Z"
     },
     {
       "id": "3771a5c0-b6a0-494d-924a-f6d7e5ae0b59",
