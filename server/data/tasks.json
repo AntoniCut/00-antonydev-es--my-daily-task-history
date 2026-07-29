@@ -1,147 +1,147 @@
 {
-  "version": 2,
-  "tasks": [
-    {
-      "id": "fe11c363-538e-4eb9-b18a-8a2215d7ca41",
-      "title": "INFORMATICA",
-      "description": "Mis desarrollos de informática.",
-      "color": "#5b8def",
-      "completed": false,
-      "active": true,
-      "subtasks": [
+    "version": 2,
+    "tasks": [
         {
-          "id": "eb5e39b8-1f46-47ec-b1c4-48312dd9f833",
-          "title": "01 - Udemy - Victor Robles Web  - Frontend - Desarrollo Web 100 Proyectos HTML, CSS y JavaScript",
-          "completed": false,
-          "active": true,
-          "entries": [
-            {
-              "id": "0e644d7c-8387-40e5-a79f-1029c250905f",
-              "date": "2026-07-30",
-              "start": "01:15",
-              "end": "03:15",
-              "minutes": 120,
-              "note": "- 03. Proyectos JavaScript",
-              "createdAt": "2026-07-29T23:08:04.813Z",
-              "updatedAt": "2026-07-29T23:08:04.813Z"
-            }
-          ],
-          "createdAt": "2026-07-28T16:21:25.608Z",
-          "updatedAt": "2026-07-29T23:05:40.022Z"
+            "id": "fe11c363-538e-4eb9-b18a-8a2215d7ca41",
+            "title": "INFORMATICA",
+            "description": "Mis desarrollos de informática.",
+            "color": "#5b8def",
+            "completed": false,
+            "active": true,
+            "subtasks": [
+                {
+                    "id": "eb5e39b8-1f46-47ec-b1c4-48312dd9f833",
+                    "title": "01 - Udemy - Victor Robles Web  - Frontend - Desarrollo Web 100 Proyectos HTML, CSS y JavaScript",
+                    "completed": false,
+                    "active": true,
+                    "entries": [
+                        {
+                            "id": "0e644d7c-8387-40e5-a79f-1029c250905f",
+                            "date": "2026-07-30",
+                            "start": "01:15",
+                            "end": "03:15",
+                            "minutes": 120,
+                            "note": "- 03. Proyectos JavaScript",
+                            "createdAt": "2026-07-29T23:08:04.813Z",
+                            "updatedAt": "2026-07-29T23:08:04.813Z"
+                        }
+                    ],
+                    "createdAt": "2026-07-28T16:21:25.608Z",
+                    "updatedAt": "2026-07-29T23:05:40.022Z"
+                },
+                {
+                    "id": "1f3761db-54e5-4188-8e78-3c2478e34b76",
+                    "title": "02 - DevTalles",
+                    "completed": false,
+                    "active": true,
+                    "entries": [],
+                    "createdAt": "2026-07-28T16:21:25.608Z",
+                    "updatedAt": "2026-07-28T16:21:25.608Z"
+                },
+                {
+                    "id": "667428d5-47dc-4897-b255-73eda11afa05",
+                    "title": "03 - JavaScript",
+                    "completed": false,
+                    "active": true,
+                    "entries": [],
+                    "createdAt": "2026-07-28T16:21:25.608Z",
+                    "updatedAt": "2026-07-28T16:21:25.608Z"
+                }
+            ],
+            "entries": [],
+            "createdAt": "2026-07-28T16:21:25.608Z",
+            "updatedAt": "2026-07-29T23:36:21.689Z"
         },
         {
-          "id": "1f3761db-54e5-4188-8e78-3c2478e34b76",
-          "title": "02 - DevTalles",
-          "completed": false,
-          "active": true,
-          "entries": [],
-          "createdAt": "2026-07-28T16:21:25.608Z",
-          "updatedAt": "2026-07-28T16:21:25.608Z"
+            "id": "3771a5c0-b6a0-494d-924a-f6d7e5ae0b59",
+            "title": "EXTRUCOLOR",
+            "color": "#4fbf8b",
+            "completed": false,
+            "active": true,
+            "subtasks": [
+                {
+                    "id": "461ac23f-509d-4f0a-ac35-d7b4b3c4cd4d",
+                    "title": "Extrucolor - Turno Mañana",
+                    "completed": false,
+                    "active": true,
+                    "entries": [
+                        {
+                            "id": "9166719e-25cd-4dd8-8405-94322676ecf9",
+                            "date": "2026-07-30",
+                            "start": "06:00",
+                            "end": "14:00",
+                            "minutes": 480,
+                            "note": "Prensa 1800 T:\n- Maquinista.",
+                            "createdAt": "2026-07-29T23:21:39.267Z",
+                            "updatedAt": "2026-07-29T23:21:39.267Z"
+                        }
+                    ],
+                    "createdAt": "2026-07-28T16:50:24.366Z",
+                    "updatedAt": "2026-07-28T16:50:24.366Z"
+                },
+                {
+                    "id": "10cf79a6-a1a9-4d64-b1ee-4ebaa13a7d1b",
+                    "title": "Extrucolor - Turno Tarde",
+                    "completed": false,
+                    "active": true,
+                    "entries": [],
+                    "createdAt": "2026-07-28T16:50:24.366Z",
+                    "updatedAt": "2026-07-28T16:50:24.366Z"
+                },
+                {
+                    "id": "01ccb843-b437-4e09-ad26-cd4c3d1a1d09",
+                    "title": "Extrucolor - Turno Noche",
+                    "completed": false,
+                    "active": true,
+                    "entries": [],
+                    "createdAt": "2026-07-28T16:50:24.366Z",
+                    "updatedAt": "2026-07-28T16:50:24.366Z"
+                }
+            ],
+            "entries": [],
+            "createdAt": "2026-07-28T16:50:24.366Z",
+            "updatedAt": "2026-07-29T23:21:39.267Z"
         },
         {
-          "id": "667428d5-47dc-4897-b255-73eda11afa05",
-          "title": "03 - JavaScript",
-          "completed": false,
-          "active": true,
-          "entries": [],
-          "createdAt": "2026-07-28T16:21:25.608Z",
-          "updatedAt": "2026-07-28T16:21:25.608Z"
+            "id": "b9d536c2-8084-481c-9e8c-474b0fb8b562",
+            "title": "TAREAS CASERAS",
+            "color": "#e5a34d",
+            "completed": false,
+            "active": true,
+            "subtasks": [
+                {
+                    "id": "1f4e1551-0d1d-44d6-8691-4e85f757e31a",
+                    "title": "Mantenimiento Casa",
+                    "completed": false,
+                    "active": true,
+                    "entries": [],
+                    "createdAt": "2026-07-28T16:51:14.787Z",
+                    "updatedAt": "2026-07-28T16:51:14.787Z"
+                },
+                {
+                    "id": "3eefc00b-23c5-4599-8d7d-a9562c76a3ad",
+                    "title": "Mantenimiento Parcela",
+                    "completed": false,
+                    "active": true,
+                    "entries": [],
+                    "createdAt": "2026-07-28T16:51:14.787Z",
+                    "updatedAt": "2026-07-28T16:51:14.787Z"
+                }
+            ],
+            "entries": [],
+            "createdAt": "2026-07-28T16:51:14.787Z",
+            "updatedAt": "2026-07-28T16:51:14.787Z"
+        },
+        {
+            "id": "f7dc6ad4-6965-407a-b95e-c2e9b67429d5",
+            "title": "OTRAS TAREAS",
+            "color": "#b57bec",
+            "completed": false,
+            "active": true,
+            "subtasks": [],
+            "entries": [],
+            "createdAt": "2026-07-28T16:51:47.624Z",
+            "updatedAt": "2026-07-28T16:51:47.624Z"
         }
-      ],
-      "entries": [],
-      "createdAt": "2026-07-28T16:21:25.608Z",
-      "updatedAt": "2026-07-29T23:36:21.689Z"
-    },
-    {
-      "id": "3771a5c0-b6a0-494d-924a-f6d7e5ae0b59",
-      "title": "EXTRUCOLOR",
-      "color": "#4fbf8b",
-      "completed": false,
-      "active": true,
-      "subtasks": [
-        {
-          "id": "461ac23f-509d-4f0a-ac35-d7b4b3c4cd4d",
-          "title": "Extrucolor - Turno Mañana",
-          "completed": false,
-          "active": true,
-          "entries": [
-            {
-              "id": "9166719e-25cd-4dd8-8405-94322676ecf9",
-              "date": "2026-07-30",
-              "start": "06:00",
-              "end": "14:00",
-              "minutes": 480,
-              "note": "Prensa 1800 T:\n- Maquinista.",
-              "createdAt": "2026-07-29T23:21:39.267Z",
-              "updatedAt": "2026-07-29T23:21:39.267Z"
-            }
-          ],
-          "createdAt": "2026-07-28T16:50:24.366Z",
-          "updatedAt": "2026-07-28T16:50:24.366Z"
-        },
-        {
-          "id": "10cf79a6-a1a9-4d64-b1ee-4ebaa13a7d1b",
-          "title": "Extrucolor - Turno Tarde",
-          "completed": false,
-          "active": true,
-          "entries": [],
-          "createdAt": "2026-07-28T16:50:24.366Z",
-          "updatedAt": "2026-07-28T16:50:24.366Z"
-        },
-        {
-          "id": "01ccb843-b437-4e09-ad26-cd4c3d1a1d09",
-          "title": "Extrucolor - Turno Noche",
-          "completed": false,
-          "active": true,
-          "entries": [],
-          "createdAt": "2026-07-28T16:50:24.366Z",
-          "updatedAt": "2026-07-28T16:50:24.366Z"
-        }
-      ],
-      "entries": [],
-      "createdAt": "2026-07-28T16:50:24.366Z",
-      "updatedAt": "2026-07-29T23:21:39.267Z"
-    },
-    {
-      "id": "b9d536c2-8084-481c-9e8c-474b0fb8b562",
-      "title": "TAREAS CASERAS",
-      "color": "#e5a34d",
-      "completed": false,
-      "active": true,
-      "subtasks": [
-        {
-          "id": "1f4e1551-0d1d-44d6-8691-4e85f757e31a",
-          "title": "Mantenimiento Casa",
-          "completed": false,
-          "active": true,
-          "entries": [],
-          "createdAt": "2026-07-28T16:51:14.787Z",
-          "updatedAt": "2026-07-28T16:51:14.787Z"
-        },
-        {
-          "id": "3eefc00b-23c5-4599-8d7d-a9562c76a3ad",
-          "title": "Mantenimiento Parcela",
-          "completed": false,
-          "active": true,
-          "entries": [],
-          "createdAt": "2026-07-28T16:51:14.787Z",
-          "updatedAt": "2026-07-28T16:51:14.787Z"
-        }
-      ],
-      "entries": [],
-      "createdAt": "2026-07-28T16:51:14.787Z",
-      "updatedAt": "2026-07-28T16:51:14.787Z"
-    },
-    {
-      "id": "f7dc6ad4-6965-407a-b95e-c2e9b67429d5",
-      "title": "OTRAS TAREAS",
-      "color": "#b57bec",
-      "completed": false,
-      "active": true,
-      "subtasks": [],
-      "entries": [],
-      "createdAt": "2026-07-28T16:51:47.624Z",
-      "updatedAt": "2026-07-28T16:51:47.624Z"
-    }
-  ]
+    ]
 }

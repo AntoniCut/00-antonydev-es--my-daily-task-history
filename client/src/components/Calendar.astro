@@ -313,13 +313,10 @@ const transitionName =
             const enableFloating = (): void => {
                 root.classList.remove('is-docked');
                 host?.classList.remove('is-calendar-docked');
+
+                // Anclar antes de hacerlo visible (clase is-floating).
+                if (host) dockFixed(root, host, storageKey);
                 root.classList.add('is-floating');
-
-                const dock = (): void => {
-                    if (host) dockFixed(root, host, storageKey);
-                };
-
-                requestAnimationFrame(dock);
 
                 if (!dragCleanup) {
                     dragCleanup = makeDraggable(root, {
@@ -524,7 +521,11 @@ const transitionName =
     /* ---- Variante compact (sidebar, flotante en desktop) ---- */
 
     .calendar--compact {
-        /* Tamaño fijo en el aside (no crece ni encoge al arrastrar) */
+        /* Encima del hueco desde el primer paint: evita el salto
+           abajo→arriba cuando JS lo pasa a position:fixed */
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 268px;
         height: 320px;
         max-width: 268px;
@@ -535,6 +536,14 @@ const transitionName =
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        z-index: 50;
+    }
+
+    /* Desktop: no mostrar hasta anclar (evita salto a posición guardada) */
+    @media (min-width: 901px) {
+        .calendar--compact:not(.is-floating) {
+            visibility: hidden;
+        }
     }
 
     .calendar--compact.is-draggable .calendar-header {
@@ -550,8 +559,9 @@ const transitionName =
         cursor: grabbing;
     }
 
-    /* Acoplado bajo el menú en pantallas pequeñas (flujo normal) */
-    .calendar--compact.is-docked {
+    /* Acoplado bajo el menú (CSS + clase JS; sin esperar al script) */
+    .calendar--compact.is-docked,
+    .calendar--compact.is-docked.is-floating {
         position: relative !important;
         inset: auto !important;
         left: auto !important;
@@ -572,6 +582,31 @@ const transitionName =
 
     .calendar--compact.is-docked .calendar-header {
         cursor: default;
+    }
+
+    @media (max-width: 900px) {
+        .calendar--compact {
+            position: relative !important;
+            inset: auto !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100%;
+            max-width: 100%;
+            height: min(280px, 38vh);
+            max-height: min(280px, 38vh);
+            margin: 0;
+            box-shadow: none;
+            border: 1px solid var(--color-border);
+            z-index: auto;
+        }
+
+        .calendar--compact .calendar-drag-grip {
+            display: none;
+        }
+
+        .calendar--compact .calendar-header {
+            cursor: default;
+        }
     }
 
     .calendar--compact .calendar-header {
