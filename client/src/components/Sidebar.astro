@@ -6,7 +6,8 @@
  */
 
 // Navegación lateral del dashboard. En la vista de un día muestra el
-// calendario compacto debajo de Informes (flotante / arrastrable).
+// calendario compacto debajo de Informes (flotante en desktop; acoplado
+// bajo el menú en pantallas pequeñas).
 
 import Logo from './Logo.astro';
 import Calendar from './Calendar.astro';
@@ -165,6 +166,11 @@ const links = [
         pointer-events: none;
     }
 
+    /* En móvil el calendario va en flujo: el hueco fijo no hace falta */
+    .sidebar-calendar-host:global(.is-calendar-docked) .sidebar-calendar-slot {
+        display: none;
+    }
+
     .sidebar-foot {
         margin-top: auto;
         color: var(--color-text-muted);
@@ -175,7 +181,8 @@ const links = [
         .sidebar {
             border-right: none;
             border-bottom: 1px solid var(--color-border);
-            gap: 1rem;
+            gap: 0.85rem;
+            flex-shrink: 0;
         }
 
         .nav {
@@ -183,9 +190,12 @@ const links = [
             flex-wrap: wrap;
         }
 
+        .sidebar-calendar-host {
+            width: 100%;
+        }
+
         .sidebar-calendar-slot {
-            min-height: 0;
-            height: 0;
+            display: none;
         }
 
         .sidebar-foot {

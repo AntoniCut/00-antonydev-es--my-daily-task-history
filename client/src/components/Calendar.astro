@@ -6,7 +6,8 @@
  */
 
 // Calendario mensual: en el dashboard ocupa todo el ancho (large). En la
-// vista de un día aparece compacto en el sidebar (flotante / arrastrable).
+// vista de un día aparece compacto en el sidebar (flotante en desktop;
+// acoplado bajo el menú en pantallas ≤900px).
 // Nombres de transición distintos: si comparten el mismo `transition:name`,
 // el morph compacto↔grande deja el panel a pantalla completa sin márgenes.
 
@@ -297,24 +298,67 @@ const transitionName =
         if (variant === 'compact') {
             const host = document.getElementById('sidebar-calendar-host');
             const storageKey = 'calendar-compact-position';
+            const mobileQuery = window.matchMedia('(max-width: 900px)');
+            let dragCleanup: (() => void) | null = null;
 
-            const dock = (): void => {
-                if (host) dockFixed(root, host, storageKey);
+            const clearFloating = (): void => {
+                dragCleanup?.();
+                dragCleanup = null;
+                root.removeAttribute('style');
+                root.classList.remove('is-draggable', 'is-dragging', 'is-floating');
+                root.classList.add('is-docked');
+                host?.classList.add('is-calendar-docked');
             };
 
-            // Anclar al hueco del sidebar (o restaurar posición guardada)
-            requestAnimationFrame(dock);
-            window.addEventListener('resize', dock, { signal });
+            const enableFloating = (): void => {
+                root.classList.remove('is-docked');
+                host?.classList.remove('is-calendar-docked');
+                root.classList.add('is-floating');
 
-            makeDraggable(root, {
-                handle: '[data-drag-handle]',
-                storageKey,
-                signal,
-            });
+                const dock = (): void => {
+                    if (host) dockFixed(root, host, storageKey);
+                };
+
+                requestAnimationFrame(dock);
+
+                if (!dragCleanup) {
+                    dragCleanup = makeDraggable(root, {
+                        handle: '[data-drag-handle]',
+                        storageKey,
+                        signal,
+                    });
+                }
+            };
+
+            const syncLayout = (): void => {
+                if (mobileQuery.matches) {
+                    // Pantallas pequeñas: calendario en flujo, bajo el menú
+                    clearFloating();
+                } else {
+                    enableFloating();
+                }
+            };
+
+            syncLayout();
+            mobileQuery.addEventListener('change', syncLayout, { signal });
+            window.addEventListener(
+                'resize',
+                () => {
+                    if (!mobileQuery.matches && host) {
+                        dockFixed(root, host, storageKey);
+                    }
+                },
+                { signal },
+            );
         } else {
             // Quitar restos del modo flotante (fixed / tamaño) al volver al dashboard
             root.removeAttribute('style');
-            root.classList.remove('is-draggable', 'is-dragging');
+            root.classList.remove(
+                'is-draggable',
+                'is-dragging',
+                'is-floating',
+                'is-docked',
+            );
         }
 
         void refresh();
@@ -477,7 +521,7 @@ const transitionName =
         padding: 0.08rem 0.22rem;
     }
 
-    /* ---- Variante compact (sidebar, flotante) ---- */
+    /* ---- Variante compact (sidebar, flotante en desktop) ---- */
 
     .calendar--compact {
         /* Tamaño fijo en el aside (no crece ni encoge al arrastrar) */
@@ -504,6 +548,30 @@ const transitionName =
 
     .calendar--compact.is-dragging .calendar-header {
         cursor: grabbing;
+    }
+
+    /* Acoplado bajo el menú en pantallas pequeñas (flujo normal) */
+    .calendar--compact.is-docked {
+        position: relative !important;
+        inset: auto !important;
+        left: auto !important;
+        top: auto !important;
+        width: 100%;
+        max-width: 100%;
+        height: min(280px, 38vh);
+        max-height: min(280px, 38vh);
+        margin: 0;
+        box-shadow: none;
+        border: 1px solid var(--color-border);
+        z-index: auto;
+    }
+
+    .calendar--compact.is-docked .calendar-drag-grip {
+        display: none;
+    }
+
+    .calendar--compact.is-docked .calendar-header {
+        cursor: default;
     }
 
     .calendar--compact .calendar-header {

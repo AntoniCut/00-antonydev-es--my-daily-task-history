@@ -272,6 +272,8 @@ const {
         .shell.fit-viewport {
             height: 100dvh;
             overflow: hidden;
+            /* Menú (+ calendario acoplado) arriba; el día ocupa el resto */
+            grid-template-rows: auto minmax(0, 1fr);
         }
     }
 </style>

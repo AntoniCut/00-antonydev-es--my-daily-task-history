@@ -73,24 +73,32 @@ export const dockFixed = (
 
 /**
  * Hace arrastrable un elemento que ya es (o pasará a ser) `position: fixed`.
+ * Devuelve una función para desactivar el arrastre (p. ej. al acoplar en móvil).
  */
 export const makeDraggable = (
     el: HTMLElement,
     options: DraggableOptions = {},
-): void => {
+): (() => void) => {
     const { handle, storageKey, signal } = options;
-    const listenerOpts: AddEventListenerOptions | undefined = signal
-        ? { signal }
-        : undefined;
+    const local = new AbortController();
 
     const source = handle
         ? el.querySelector<HTMLElement>(handle)
         : el;
 
+    const cleanup = (): void => {
+        if (!local.signal.aborted) local.abort();
+        el.classList.remove('is-draggable', 'is-dragging');
+        if (source) source.style.touchAction = '';
+    };
+
     if (!source) {
         console.warn('[draggable] No se encontró el asa:', handle);
-        return;
+        return cleanup;
     }
+
+    if (signal?.aborted) return cleanup;
+    signal?.addEventListener('abort', cleanup, { once: true });
 
     el.classList.add('is-draggable');
     source.style.touchAction = 'none';
@@ -128,30 +136,31 @@ export const makeDraggable = (
         }
     };
 
-    source.addEventListener(
-        'pointerdown',
-        (event: PointerEvent) => {
-            if (event.button !== 0) return;
+    const onPointerDown = (event: PointerEvent): void => {
+        if (event.button !== 0) return;
 
-            const target = event.target as HTMLElement | null;
-            if (target?.closest('button, a, input, select, textarea')) return;
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('button, a, input, select, textarea')) return;
 
-            const rect = el.getBoundingClientRect();
-            offsetX = event.clientX - rect.left;
-            offsetY = event.clientY - rect.top;
-            dragging = true;
-            pointerId = event.pointerId;
+        const rect = el.getBoundingClientRect();
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+        dragging = true;
+        pointerId = event.pointerId;
 
-            // Asegura capa flotante antes de mover
-            placeFixed(el, rect.left, rect.top);
-            el.classList.add('is-dragging');
-            source.setPointerCapture(event.pointerId);
-            event.preventDefault();
-        },
-        listenerOpts,
-    );
+        // Asegura capa flotante antes de mover
+        placeFixed(el, rect.left, rect.top);
+        el.classList.add('is-dragging');
+        source.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    };
 
+    const listenerOpts: AddEventListenerOptions = { signal: local.signal };
+
+    source.addEventListener('pointerdown', onPointerDown, listenerOpts);
     source.addEventListener('pointermove', onPointerMove, listenerOpts);
     source.addEventListener('pointerup', stopDrag, listenerOpts);
     source.addEventListener('pointercancel', stopDrag, listenerOpts);
+
+    return cleanup;
 };
