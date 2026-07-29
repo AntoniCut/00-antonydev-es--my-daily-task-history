@@ -11,12 +11,23 @@
       "subtasks": [
         {
           "id": "eb5e39b8-1f46-47ec-b1c4-48312dd9f833",
-          "title": "01 - Udemy",
+          "title": "01 - Udemy - Victor Robles Web  - Frontend - Desarrollo Web 100 Proyectos HTML, CSS y JavaScript",
           "completed": false,
           "active": true,
-          "entries": [],
+          "entries": [
+            {
+              "id": "0e644d7c-8387-40e5-a79f-1029c250905f",
+              "date": "2026-07-30",
+              "start": "01:15",
+              "end": "03:15",
+              "minutes": 120,
+              "note": "- 03. Proyectos JavaScript",
+              "createdAt": "2026-07-29T23:08:04.813Z",
+              "updatedAt": "2026-07-29T23:08:04.813Z"
+            }
+          ],
           "createdAt": "2026-07-28T16:21:25.608Z",
-          "updatedAt": "2026-07-28T16:21:25.608Z"
+          "updatedAt": "2026-07-29T23:05:40.022Z"
         },
         {
           "id": "1f3761db-54e5-4188-8e78-3c2478e34b76",
@@ -61,7 +72,7 @@
         }
       ],
       "createdAt": "2026-07-28T16:21:25.608Z",
-      "updatedAt": "2026-07-28T19:45:55.222Z"
+      "updatedAt": "2026-07-29T23:08:04.813Z"
     },
     {
       "id": "3771a5c0-b6a0-494d-924a-f6d7e5ae0b59",
@@ -75,7 +86,18 @@
           "title": "Extrucolor - Turno Mañana",
           "completed": false,
           "active": true,
-          "entries": [],
+          "entries": [
+            {
+              "id": "9166719e-25cd-4dd8-8405-94322676ecf9",
+              "date": "2026-07-30",
+              "start": "06:00",
+              "end": "14:00",
+              "minutes": 480,
+              "note": "Prensa 1800 T:\n- Maquinista.",
+              "createdAt": "2026-07-29T23:21:39.267Z",
+              "updatedAt": "2026-07-29T23:21:39.267Z"
+            }
+          ],
           "createdAt": "2026-07-28T16:50:24.366Z",
           "updatedAt": "2026-07-28T16:50:24.366Z"
         },
@@ -100,7 +122,7 @@
       ],
       "entries": [],
       "createdAt": "2026-07-28T16:50:24.366Z",
-      "updatedAt": "2026-07-28T17:29:51.065Z"
+      "updatedAt": "2026-07-29T23:21:39.267Z"
     },
     {
       "id": "b9d536c2-8084-481c-9e8c-474b0fb8b562",

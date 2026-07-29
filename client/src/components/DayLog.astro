@@ -238,38 +238,93 @@ const { date } = Astro.props;
             }
         };
 
-        const renderRow = (entry: TimeEntryView): HTMLLIElement => {
-            const item = create('li', { className: 'entry-item' });
-            const dot = create('span', { className: 'entry-color' });
-            dot.style.backgroundColor = entry.taskColor;
+        /** Niveles de sangría a partir de espacios/tabs al inicio de cada línea. */
+        const indentLevel = (leading: string): number => {
+            let level = 0;
+            for (const char of leading) {
+                level += char === '\t' ? 1 : 0.5;
+            }
+            return Math.floor(level);
+        };
 
-            const body = create('div', { className: 'entry-body' });
-            const label = create('span', { className: 'entry-task' });
-            label.textContent = entry.subtaskTitle
-                ? `${entry.taskTitle} › ${entry.subtaskTitle}`
-                : entry.taskTitle;
-            body.appendChild(label);
+        /**
+         * Convierte la actividad en una lista jerárquica.
+         * - Líneas sin guion se muestran como viñetas de nivel base.
+         * - Si la primera línea no era viñeta, las que sí lo son bajan un nivel
+         *   (p. ej. "Prensa…\n- Maquinista" → - Prensa / ·· - Maquinista).
+         */
+        const renderNoteOutline = (note: string): HTMLUListElement | null => {
+            const parsed = note
+                .split('\n')
+                .map((raw) => {
+                    const match = raw.match(/^(\s*)(.*)$/);
+                    const leading = match?.[1] ?? '';
+                    let content = (match?.[2] ?? '').trimEnd();
+                    if (!content.trim()) return null;
+                    const bullet = content.match(/^[-•]\s*(.*)$/);
+                    const hadBullet = Boolean(bullet);
+                    if (bullet) content = bullet[1] ?? '';
+                    return {
+                        level: indentLevel(leading),
+                        hadBullet,
+                        content: content.trim(),
+                    };
+                })
+                .filter((line): line is NonNullable<typeof line> =>
+                    Boolean(line?.content),
+                );
 
+            if (parsed.length === 0) return null;
+
+            const firstIsPlain = !parsed[0].hadBullet;
+            const list = create('ul', { className: 'outline-note' });
+
+            for (const line of parsed) {
+                let level = line.level;
+                if (line.hadBullet && firstIsPlain) level += 1;
+                const item = create('li', {
+                    className: 'outline-line',
+                    text: line.content,
+                });
+                item.style.setProperty('--outline-level', String(level));
+                list.appendChild(item);
+            }
+
+            return list;
+        };
+
+        const renderEntry = (entry: TimeEntryView): HTMLElement => {
+            const block = create('article', { className: 'entry-block' });
             const crossesMidnight = entry.end <= entry.start;
-            body.appendChild(
+
+            const timeRow = create('div', { className: 'entry-time-row' });
+            timeRow.appendChild(
                 create('span', {
                     className: 'entry-hours',
-                    text: `${entry.start} → ${entry.end}${crossesMidnight ? ' (+1 día)' : ''}`,
+                    text: `${entry.start} - ${entry.end}${crossesMidnight ? ' (+1 día)' : ''}`,
                 }),
             );
-            if (entry.note) {
-                body.appendChild(
-                    create('span', {
-                        className: 'entry-note',
-                        text: entry.note,
+            timeRow.appendChild(
+                create('span', {
+                    className: 'badge time-badge entry-duration',
+                    text: formatMinutes(entry.minutes),
+                }),
+            );
+
+            const outline = create('div', { className: 'entry-outline' });
+            if (entry.subtaskTitle) {
+                outline.appendChild(
+                    create('div', {
+                        className: 'outline-subtask',
+                        text: entry.subtaskTitle,
                     }),
                 );
             }
 
-            const total = create('span', {
-                className: 'badge time-badge',
-                text: formatMinutes(entry.minutes),
-            });
+            if (entry.note) {
+                const noteList = renderNoteOutline(entry.note);
+                if (noteList) outline.appendChild(noteList);
+            }
 
             const actions = create('div', { className: 'entry-actions' });
             const editBtn = create('button', {
@@ -288,7 +343,7 @@ const { date } = Astro.props;
 
             editBtn.addEventListener(
                 'click',
-                () => item.replaceChildren(buildEditForm(entry)),
+                () => block.replaceChildren(buildEditForm(entry)),
                 { signal },
             );
 
@@ -305,8 +360,54 @@ const { date } = Astro.props;
                 { signal },
             );
 
-            item.append(dot, body, total, actions);
-            return item;
+            block.append(timeRow, outline, actions);
+            return block;
+        };
+
+        /** Agrupa por tarea; el orden de grupos sigue el primer registro de cada una. */
+        const renderDay = (entries: TimeEntryView[]): DocumentFragment => {
+            const fragment = document.createDocumentFragment();
+            const groups = new Map<
+                string,
+                {
+                    taskTitle: string;
+                    taskColor: string;
+                    entries: TimeEntryView[];
+                }
+            >();
+
+            for (const entry of entries) {
+                const existing = groups.get(entry.taskId);
+                if (existing) {
+                    existing.entries.push(entry);
+                } else {
+                    groups.set(entry.taskId, {
+                        taskTitle: entry.taskTitle,
+                        taskColor: entry.taskColor,
+                        entries: [entry],
+                    });
+                }
+            }
+
+            for (const group of groups.values()) {
+                const item = create('li', { className: 'task-group' });
+                item.style.setProperty('--task-color', group.taskColor);
+
+                item.appendChild(
+                    create('h3', {
+                        className: 'task-heading',
+                        text: group.taskTitle,
+                    }),
+                );
+
+                for (const entry of group.entries) {
+                    item.appendChild(renderEntry(entry));
+                }
+
+                fragment.appendChild(item);
+            }
+
+            return fragment;
         };
 
         const buildEditForm = (entry: TimeEntryView): HTMLFormElement => {
@@ -360,7 +461,7 @@ const { date } = Astro.props;
         const loadEntries = async (): Promise<void> => {
             try {
                 const entries = await api.getEntries({ date: currentDate });
-                listEl.replaceChildren(...entries.map(renderRow));
+                listEl.replaceChildren(renderDay(entries));
                 const hasCatalogTasks = tasks.length > 0;
                 emptyEl.hidden = entries.length > 0 || !hasCatalogTasks;
                 totalEl.textContent = formatMinutes(
@@ -593,9 +694,11 @@ const { date } = Astro.props;
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        margin: 0.35rem 0 0;
-        padding: 0 0.25rem;
+        gap: 2.25rem;
+        margin: 0.75rem auto 0;
+        padding: 0 0.5rem 0.5rem;
+        max-width: 42rem;
+        width: 100%;
     }
 
     .entry-list:empty {
@@ -603,54 +706,128 @@ const { date } = Astro.props;
         padding: 0;
     }
 
-    .entry-list :global(.entry-item) {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        background-color: var(--color-bg);
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-        padding: 0.8rem 1rem;
-    }
-
-    .entry-list :global(.entry-color) {
-        width: 8px;
-        height: 32px;
-        border-radius: 4px;
-        flex-shrink: 0;
-    }
-
-    .entry-list :global(.entry-body) {
+    /* Bloque por tarea: título centrado + tramos debajo */
+    .entry-list :global(.task-group) {
         display: flex;
         flex-direction: column;
-        flex: 1;
-        min-width: 0;
+        gap: 1.15rem;
+        position: relative;
+        padding-top: 0.15rem;
     }
 
-    .entry-list :global(.entry-task) {
-        font-weight: 600;
-        font-size: 0.92rem;
-        overflow-wrap: anywhere;
+    .entry-list :global(.task-heading) {
+        margin: 0;
+        text-align: center;
+        font-size: 0.98rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--task-color, var(--color-text));
+        line-height: 1.35;
+    }
+
+    .entry-list :global(.entry-block) {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+            'time actions'
+            'outline outline';
+        gap: 0.65rem 0.75rem;
+        align-items: start;
+        padding: 0.25rem 0.35rem 0.45rem;
+        border-radius: 8px;
+        transition: background-color 0.15s ease;
+    }
+
+    .entry-list :global(.entry-block:hover) {
+        background-color: color-mix(
+            in srgb,
+            var(--color-surface-hover) 55%,
+            transparent
+        );
+    }
+
+    .entry-list :global(.entry-time-row) {
+        grid-area: time;
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+        gap: 0.65rem;
+        padding: 0 2.5rem;
     }
 
     .entry-list :global(.entry-hours) {
         color: var(--color-text-muted);
-        font-size: 0.8rem;
+        font-size: 0.95rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.06em;
     }
 
-    .entry-list :global(.entry-note) {
+    .entry-list :global(.entry-duration) {
+        font-size: 0.72rem;
+        opacity: 0.85;
+    }
+
+    .entry-list :global(.entry-outline) {
+        grid-area: outline;
+        display: flex;
+        flex-direction: column;
+        gap: 0.18rem;
+        width: min(100%, 34rem);
+        margin-inline: auto;
+        padding: 0.2rem 0 0 1.25rem;
+        box-sizing: border-box;
+    }
+
+    .entry-list :global(.outline-subtask) {
+        font-size: 0.92rem;
+        font-weight: 500;
+        color: var(--color-text);
+        overflow-wrap: anywhere;
+        line-height: 1.45;
+    }
+
+    .entry-list :global(.outline-note) {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.12rem;
+    }
+
+    .entry-list :global(.outline-line) {
+        position: relative;
+        padding-left: calc(1.1rem + (var(--outline-level, 0) * 1.35rem));
         color: var(--color-text-muted);
-        font-size: 0.8rem;
-        font-style: italic;
-        /* Respeta los saltos de línea escritos en el textarea */
-        white-space: pre-line;
+        font-size: 0.88rem;
+        line-height: 1.45;
         overflow-wrap: anywhere;
     }
 
+    .entry-list :global(.outline-line::before) {
+        content: '-';
+        position: absolute;
+        left: calc(var(--outline-level, 0) * 1.35rem);
+        color: var(--color-text-muted);
+    }
+
     .entry-list :global(.entry-actions) {
+        grid-area: actions;
         display: flex;
-        gap: 0.35rem;
+        gap: 0.25rem;
         flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    .entry-list :global(.entry-block:hover .entry-actions),
+    .entry-list :global(.entry-block:focus-within .entry-actions) {
+        opacity: 1;
+    }
+
+    .entry-list :global(.entry-block:has(.entry-edit)) {
+        display: block;
     }
 
     .entry-list :global(.entry-edit) {
@@ -676,5 +853,25 @@ const { date } = Astro.props;
         width: 100%;
         resize: none;
         line-height: 1.45;
+    }
+
+    @media (max-width: 600px) {
+        .entry-list :global(.entry-outline) {
+            padding-left: 0.75rem;
+        }
+
+        .entry-list :global(.entry-time-row) {
+            padding-inline: 0;
+            justify-content: flex-start;
+        }
+
+        .entry-list :global(.entry-actions) {
+            opacity: 1;
+        }
+
+        .entry-list :global(.task-heading) {
+            letter-spacing: 0.08em;
+            font-size: 0.9rem;
+        }
     }
 </style>
