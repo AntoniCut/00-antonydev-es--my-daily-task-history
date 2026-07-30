@@ -8,8 +8,10 @@
 // Calendario mensual: en el dashboard ocupa todo el ancho (large). En la
 // vista de un día aparece compacto en el sidebar (flotante en desktop;
 // acoplado bajo el menú en pantallas ≤900px).
-// Nombres de transición distintos: si comparten el mismo `transition:name`,
-// el morph compacto↔grande deja el panel a pantalla completa sin márgenes.
+// Ambas variantes comparten el mismo `transition:name` para que el panel
+// "vuele" de una posición/ tamaño a otro (morph). Coste: durante la
+// transición el panel puede verse a pantalla completa; al final recupera
+// su layout real.
 
 interface Props {
     /** `large` = dashboard; `compact` = sidebar en vista de un día */
@@ -19,8 +21,7 @@ interface Props {
 }
 
 const { variant = 'large', selectedDate } = Astro.props;
-const transitionName =
-    variant === 'compact' ? 'calendar-compact' : 'calendar-large';
+const transitionName = 'calendar';
 ---
 
 <div
@@ -112,6 +113,76 @@ const transitionName =
     }
 
     const MAX_TASK_CHIPS = 3;
+
+    /**
+     * El `calendar-compact` en desktop es flotante y arrastrable; arranca
+     * `visibility: hidden` hasta que el script (en `astro:page-load`) lo ancla
+     * con `dockFixed`. Como el navegador toma el snapshot del nuevo DOM ANTES
+     * de que ese script corra, el `::view-transition-new(calendar)` sale
+     * invisible y el navegador recorta el morph (de ahí el "va rápido" al
+     * regresar del dashboard al día).
+     *
+     * Lo resolvemos anclando el compacto del documento entrante a su posición
+     * guardada en `astro:before-swap` (antes del snapshot), replicando la
+     * lógica de `dockFixed`. `event.newDocument` es el documento destino:
+     * parchearlo aquí persiste tras el swap.
+     */
+    const COMPACT_STORAGE_KEY = 'calendar-compact-position';
+    let preSwapBound = false;
+
+    const preAnchorCompact = (doc: Document): void => {
+        if (window.matchMedia('(max-width: 900px)').matches) return;
+
+        const cal = doc.getElementById('calendar');
+        if (!(cal instanceof HTMLElement) || cal.dataset.variant !== 'compact') {
+            return;
+        }
+
+        let x = 0;
+        let y = 0;
+        try {
+            const raw = localStorage.getItem(COMPACT_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
+                if (typeof parsed.x === 'number') x = parsed.x;
+                if (typeof parsed.y === 'number') y = parsed.y;
+            }
+        } catch {
+            /* ignore */
+        }
+
+        // posición por defecto: margen inferior-derecho del sidebar izquierdo
+        if (!x && !y) {
+            x = 300;
+            y = 80;
+        }
+
+        const maxX = Math.max(0, window.innerWidth - cal.offsetWidth);
+        const maxY = Math.max(0, window.innerHeight - cal.offsetHeight);
+        x = Math.min(Math.max(x, 0), maxX);
+        y = Math.min(Math.max(y, 0), maxY);
+
+        cal.classList.add('is-floating');
+        cal.classList.remove('is-docked');
+        cal.style.position = 'fixed';
+        cal.style.left = `${x}px`;
+        cal.style.top = `${y}px`;
+        cal.style.right = 'auto';
+        cal.style.bottom = 'auto';
+        cal.style.margin = '0';
+        cal.style.zIndex = '50';
+        cal.style.visibility = 'visible';
+    };
+
+    if (!preSwapBound) {
+        preSwapBound = true;
+        document.addEventListener('astro:before-swap', (event: Event) => {
+            const doc = (event as Event & {
+                newDocument?: Document;
+            }).newDocument;
+            if (doc) preAnchorCompact(doc);
+        });
+    }
 
     onPageReady((signal) => {
         const root = document.getElementById('calendar');
@@ -536,7 +607,7 @@ const transitionName =
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        z-index: 50;
+        z-index: 1000;
     }
 
     /* Desktop: no mostrar hasta anclar (evita salto a posición guardada) */
@@ -803,5 +874,26 @@ const transitionName =
             font-size: 0.48rem;
             padding: 0.06rem 0.18rem;
         }
+    }
+</style>
+
+<style is:global>
+    /*
+     * Duración (1s) de la view transition del calendario. Astro expone cada
+     * `transition:name` mediante los pseudo-elementos del View Transition API:
+     *  - ::view-transition-group()  → interpolación de posición/tamaño (morph)
+     *  - ::view-transition-old/new()→ cross-fade de la instantánea vieja/nueva
+     * Deben ir en un bloque `is:global` porque son pseudo-elementos del viewport
+     * (no dependen del scope `data-astro-cid-*` del componente).
+     */
+    ::view-transition-group(calendar) {
+        animation-duration: 3s;
+        /* Viaja por encima del listado de tareas al regresar al aside. */
+        z-index: 1000;
+    }
+
+    ::view-transition-old(calendar),
+    ::view-transition-new(calendar) {
+        animation-duration: 3s;
     }
 </style>

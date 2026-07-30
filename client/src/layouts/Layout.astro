@@ -270,10 +270,23 @@ const {
         }
 
         .shell.fit-viewport {
-            height: 100dvh;
-            overflow: hidden;
-            /* Menú (+ calendario acoplado) arriba; el día ocupa el resto */
-            grid-template-rows: auto minmax(0, 1fr);
+            /* En pantallas pequeñas se permite el scroll de página en lugar
+               del scroll interno del contenedor de tareas. */
+            height: auto;
+            min-height: 100dvh;
+            overflow: visible;
+            /* Menú (+ calendario acoplado) arriba; el contenido fluye */
+            grid-template-rows: auto auto;
+        }
+
+        .shell.fit-viewport .content {
+            overflow: visible;
+        }
+
+        .shell.fit-viewport .page-main {
+            flex: none;
+            min-height: 0;
+            overflow: visible;
         }
     }
 </style>

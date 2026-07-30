@@ -694,7 +694,7 @@ const { date } = Astro.props;
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 2.25rem;
+        gap: 1.5rem;
         margin: 0.75rem auto 0;
         padding: 0 0.5rem 0.5rem;
         max-width: 42rem;
@@ -704,15 +704,6 @@ const { date } = Astro.props;
     .entry-list:empty {
         margin: 0;
         padding: 0;
-    }
-
-    /* Bloque por tarea: título centrado + tramos debajo */
-    .entry-list :global(.task-group) {
-        display: flex;
-        flex-direction: column;
-        gap: 1.15rem;
-        position: relative;
-        padding-top: 0.15rem;
     }
 
     .entry-list :global(.task-heading) {
@@ -855,6 +846,23 @@ const { date } = Astro.props;
         line-height: 1.45;
     }
 
+    /* En pantallas pequeñas la página completa hace scroll: el contenedor
+       del día deja de encajarse en el viewport y de tener scroll propio. */
+    @media (max-width: 900px) {
+        #day-log {
+            height: auto;
+            min-height: 0;
+            overflow: visible;
+        }
+
+        .log-body {
+            flex: none;
+            min-height: 0;
+            overflow-y: visible;
+            overscroll-behavior: auto;
+        }
+    }
+
     @media (max-width: 600px) {
         .entry-list :global(.entry-outline) {
             padding-left: 0.75rem;
@@ -873,5 +881,34 @@ const { date } = Astro.props;
             letter-spacing: 0.08em;
             font-size: 0.9rem;
         }
+    }
+</style>
+
+<style is:global>
+    /*
+     * Los `.task-group` se inyectan por JS tras cada navegación del ClientRouter
+     * (View Transitions). En un `<style>` scoped, el selector depende del
+     * `data-astro-cid-*` del ancestro `.entry-list`, y tras un swap de página
+     * ese alcance no se reaplica de forma fiable a los nodos recién creados
+     * (solo un F5 lo restaura). Acotando por el id único `#day-log` desde un
+     * bloque `is:global` el fondo se mantiene aunque vengas de otra ruta.
+     */
+    #day-log .task-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+        position: relative;
+        padding: 0.85rem 0.9rem 1rem;
+        border-radius: 12px;
+        background-color: color-mix(
+            in srgb,
+            var(--task-color, var(--color-surface-hover)) 12%,
+            transparent
+        );
+        border: 1px solid color-mix(
+            in srgb,
+            var(--task-color, var(--color-border)) 24%,
+            transparent
+        );
     }
 </style>
