@@ -5,8 +5,9 @@
  *  -------------------------------------------------------------------  *
  */
 
-// Vista de un día: listado con scroll interno, modal para agregar registros
-// y transición desde el calendario (`transition:name`).
+// Vista de un día: listado con scroll interno y modal para agregar registros.
+// `transition:persist` mantiene el panel entre /dia/A → /dia/B (sin morph ni
+// salto). La fecha se lee de la URL en cada `astro:page-load`.
 
 interface Props {
     /** Día a mostrar (YYYY-MM-DD). Si no se pasa, se usa hoy. */
@@ -20,7 +21,7 @@ const { date } = Astro.props;
     id="day-log"
     class="panel"
     data-date={date ?? ''}
-    transition:name="day-log"
+    transition:persist="day-log"
 >
     <header class="log-header">
         <div>
@@ -135,6 +136,13 @@ const { date } = Astro.props;
     } from '../lib/time';
     import type { Task, TimeEntryView } from '../types/task';
 
+    const dateFromUrl = (): string | null => {
+        const match = window.location.pathname.match(
+            /^\/dia\/(\d{4}-\d{2}-\d{2})\/?$/,
+        );
+        return match?.[1] ?? null;
+    };
+
     onPageReady((signal) => {
         const root = document.getElementById('day-log');
         if (!root) return;
@@ -163,7 +171,9 @@ const { date } = Astro.props;
         const listEl = query<HTMLUListElement>(root, '[data-list]');
         const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
 
-        let currentDate = root.dataset.date || todayKey();
+        // Con persist el DOM no se regenera: la fecha nueva viene de la URL.
+        let currentDate = dateFromUrl() || root.dataset.date || todayKey();
+        root.dataset.date = currentDate;
         let tasks: Task[] = [];
 
         const setDateLabel = (date: string): void => {
@@ -539,6 +549,10 @@ const { date } = Astro.props;
             { signal },
         );
 
+        // No vaciar la lista aquí: colapsar → rellenar provoca salto de altura
+        // en móvil. loadEntries sustituye el contenido cuando llegan los datos.
+        closeForm();
+        showError(errorEl, null);
         setDateLabel(currentDate);
         startInput.value = currentTime();
         void fillTasks()
@@ -553,9 +567,14 @@ const { date } = Astro.props;
     #day-log {
         display: flex;
         flex-direction: column;
+        flex: 1 1 0;
+        align-self: stretch;
+        width: 100%;
         height: 100%;
         min-height: 0;
+        max-height: 100%;
         overflow: hidden;
+        box-sizing: border-box;
     }
 
     .log-header {
@@ -672,22 +691,43 @@ const { date } = Astro.props;
 
         .log-header {
             flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
         }
 
         .log-header-actions {
             width: 100%;
             justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .log-header-actions .btn-primary {
+            flex: 1;
+            justify-content: center;
         }
     }
 
     .empty-text {
         cursor: pointer;
-        margin: 0.75rem 0.25rem;
-        padding: 0.5rem 0.15rem;
+        margin: 0.35rem 0 0;
+        padding: 1rem 0.85rem;
+        text-align: center;
+        color: var(--color-text-muted);
+        font-size: 0.9rem;
+        line-height: 1.45;
+        border: 1px dashed var(--color-border);
+        border-radius: 8px;
+        background-color: color-mix(
+            in srgb,
+            var(--color-surface-hover) 45%,
+            transparent
+        );
     }
 
     .empty-text:hover {
         color: var(--color-text);
+        border-color: var(--color-primary);
     }
 
     .entry-list {
@@ -850,36 +890,115 @@ const { date } = Astro.props;
        del día deja de encajarse en el viewport y de tener scroll propio. */
     @media (max-width: 900px) {
         #day-log {
-            height: auto;
+            flex: none !important;
+            height: auto !important;
             min-height: 0;
+            max-height: none;
             overflow: visible;
+        }
+
+        .log-header {
+            margin-bottom: 0.65rem;
+            gap: 0.65rem;
+            flex-shrink: 0;
         }
 
         .log-body {
             flex: none;
             min-height: 0;
+            max-height: none;
             overflow-y: visible;
             overscroll-behavior: auto;
+            padding: 0.15rem 0.15rem 0.5rem;
         }
     }
 
     @media (max-width: 600px) {
+        .entry-list {
+            gap: 1.1rem;
+            margin-top: 0.55rem;
+            padding: 0 0.15rem 0.35rem;
+        }
+
+        .entry-list :global(.entry-block) {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                'time'
+                'outline'
+                'actions';
+            gap: 0.45rem;
+            padding: 0.35rem 0.2rem 0.55rem;
+        }
+
         .entry-list :global(.entry-outline) {
-            padding-left: 0.75rem;
+            padding-left: 0.35rem;
+            width: 100%;
         }
 
         .entry-list :global(.entry-time-row) {
             padding-inline: 0;
             justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 0.5rem 0.65rem;
+            min-width: 0;
+        }
+
+        .entry-list :global(.entry-hours) {
+            font-size: 0.85rem;
+            letter-spacing: 0.03em;
         }
 
         .entry-list :global(.entry-actions) {
             opacity: 1;
+            gap: 0.45rem;
+            justify-content: flex-end;
+        }
+
+        .entry-list :global(.entry-actions .icon-btn) {
+            padding: 0.4rem 0.55rem;
         }
 
         .entry-list :global(.task-heading) {
             letter-spacing: 0.08em;
             font-size: 0.9rem;
+            margin-bottom: 0.15rem;
+        }
+
+        .empty-text {
+            margin-top: 0.15rem;
+            padding: 0.85rem 0.75rem;
+            font-size: 0.88rem;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .log-header-actions {
+            gap: 0.5rem;
+        }
+
+        .entry-list {
+            padding-inline: 0;
+        }
+
+        .entry-list :global(.entry-block) {
+            padding-inline: 0;
+        }
+
+        .entry-list :global(.entry-outline) {
+            padding-left: 0.2rem;
+        }
+
+        .entry-list :global(.outline-line) {
+            padding-left: calc(0.9rem + (var(--outline-level, 0) * 0.9rem));
+        }
+
+        .entry-list :global(.outline-line::before) {
+            left: calc(var(--outline-level, 0) * 0.9rem);
+        }
+
+        .entry-form {
+            gap: 0.55rem;
+            padding: 1rem 0.85rem 1.05rem;
         }
     }
 </style>
@@ -910,5 +1029,19 @@ const { date } = Astro.props;
             var(--task-color, var(--color-border)) 24%,
             transparent
         );
+    }
+
+    @media (max-width: 600px) {
+        #day-log .task-group {
+            gap: 0.85rem;
+            padding: 0.75rem 0.7rem 0.85rem;
+        }
+    }
+
+    @media (max-width: 400px) {
+        #day-log .task-group {
+            gap: 0.7rem;
+            padding: 0.65rem 0.5rem 0.75rem;
+        }
     }
 </style>

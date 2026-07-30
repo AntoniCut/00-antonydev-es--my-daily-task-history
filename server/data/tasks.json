@@ -195,6 +195,39 @@
       "entries": [],
       "createdAt": "2026-07-30T18:14:24.342Z",
       "updatedAt": "2026-07-30T18:19:21.344Z"
+    },
+    {
+      "id": "42b4f2d9-9fa1-4a48-a63b-794180afdfc8",
+      "title": "FIESTA",
+      "description": "horarios de fiestas",
+      "color": "#3fb6c4",
+      "completed": false,
+      "active": true,
+      "subtasks": [
+        {
+          "id": "dd8c9f7d-a1fe-4f42-b618-34a77def7427",
+          "title": "lios",
+          "completed": false,
+          "active": true,
+          "entries": [
+            {
+              "id": "eae9497c-022d-4f33-bbca-b3e4e8ae7bd8",
+              "date": "2026-07-31",
+              "start": "22:35",
+              "end": "05:00",
+              "minutes": 385,
+              "note": "de lio por ahi",
+              "createdAt": "2026-07-30T20:37:43.469Z",
+              "updatedAt": "2026-07-30T20:37:43.469Z"
+            }
+          ],
+          "createdAt": "2026-07-30T20:32:25.241Z",
+          "updatedAt": "2026-07-30T20:32:25.241Z"
+        }
+      ],
+      "entries": [],
+      "createdAt": "2026-07-30T20:32:25.241Z",
+      "updatedAt": "2026-07-30T20:37:43.469Z"
     }
   ]
 }

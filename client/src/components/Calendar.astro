@@ -9,9 +9,7 @@
 // vista de un día aparece compacto en el sidebar (flotante en desktop;
 // acoplado bajo el menú en pantallas ≤900px).
 // Ambas variantes comparten el mismo `transition:name` para que el panel
-// "vuele" de una posición/ tamaño a otro (morph). Coste: durante la
-// transición el panel puede verse a pantalla completa; al final recupera
-// su layout real.
+// "vuele" de una posición/tamaño a otro (morph).
 
 interface Props {
     /** `large` = dashboard; `compact` = sidebar en vista de un día */
@@ -407,6 +405,7 @@ const transitionName = 'calendar';
                 }
             };
 
+            // Layout ya (evita frame con position:absolute / 320px).
             syncLayout();
             mobileQuery.addEventListener('change', syncLayout, { signal });
             window.addEventListener(
@@ -429,6 +428,9 @@ const transitionName = 'calendar';
             );
         }
 
+        // Pintar la rejilla al momento (sin datos) para fijar altura; luego
+        // refresh solo añade puntos/tiempos sin cambiar el tamaño del mes.
+        render();
         void refresh();
     });
 </script>
@@ -516,15 +518,19 @@ const transitionName = 'calendar';
     /* ---- Variante large (dashboard) ---- */
 
     .calendar--large {
-        width: min(100%, 920px);
-        height: min(100%, 36rem);
+        /* Tamaño acotado al viewport (no al % del padre): el snapshot de la
+           view-transition captura esto y evita el morph “a pantalla completa”. */
+        width: min(920px, 100%);
+        height: min(36rem, calc(100dvh - 9rem));
         max-width: 920px;
-        max-height: 36rem;
+        max-height: min(36rem, calc(100dvh - 9rem));
         min-height: 0;
+        flex: 0 0 auto;
         margin-inline: auto;
         display: flex;
         flex-direction: column;
         padding: 1rem;
+        box-sizing: border-box;
         /* Por si quedara algún resto de position:fixed del modo compacto */
         position: relative !important;
         inset: auto !important;
@@ -630,7 +636,9 @@ const transitionName = 'calendar';
         cursor: grabbing;
     }
 
-    /* Acoplado bajo el menú (CSS + clase JS; sin esperar al script) */
+    /* Acoplado bajo el menú (CSS + clase JS; sin esperar al script).
+       Misma caja que el media móvil: evita salto 320px → auto al añadir
+       is-docked. */
     .calendar--compact.is-docked,
     .calendar--compact.is-docked.is-floating {
         position: relative !important;
@@ -639,8 +647,8 @@ const transitionName = 'calendar';
         top: auto !important;
         width: 100%;
         max-width: 100%;
-        height: min(280px, 38vh);
-        max-height: min(280px, 38vh);
+        height: auto;
+        max-height: none;
         margin: 0;
         box-shadow: none;
         border: 1px solid var(--color-border);
@@ -653,31 +661,6 @@ const transitionName = 'calendar';
 
     .calendar--compact.is-docked .calendar-header {
         cursor: default;
-    }
-
-    @media (max-width: 900px) {
-        .calendar--compact {
-            position: relative !important;
-            inset: auto !important;
-            left: auto !important;
-            top: auto !important;
-            width: 100%;
-            max-width: 100%;
-            height: min(280px, 38vh);
-            max-height: min(280px, 38vh);
-            margin: 0;
-            box-shadow: none;
-            border: 1px solid var(--color-border);
-            z-index: auto;
-        }
-
-        .calendar--compact .calendar-drag-grip {
-            display: none;
-        }
-
-        .calendar--compact .calendar-header {
-            cursor: default;
-        }
     }
 
     .calendar--compact .calendar-header {
@@ -742,6 +725,99 @@ const transitionName = 'calendar';
 
     .calendar--compact .calendar-grid :global(.day-time) {
         font-size: 0.48rem;
+    }
+
+    /* Las @media no suman especificidad: este bloque tiene que ir DESPUÉS de
+       las reglas base `.calendar--compact …` o queda anulado por ellas. */
+    @media (max-width: 900px) {
+        .calendar--compact,
+        .calendar--compact.is-docked,
+        .calendar--compact.is-docked.is-floating {
+            position: relative !important;
+            inset: auto !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100%;
+            max-width: 100%;
+            /* Alto al contenido: evita el rectángulo vacío bajo los botones */
+            height: auto;
+            max-height: none;
+            margin: 0;
+            padding: 0.45rem 0.55rem;
+            box-shadow: none;
+            border: 1px solid var(--color-border);
+            z-index: auto;
+        }
+
+        .calendar--compact .calendar-drag-grip {
+            display: none;
+        }
+
+        .calendar--compact .calendar-header {
+            cursor: default;
+            margin-bottom: 0.25rem;
+        }
+
+        .calendar--compact .panel-title {
+            font-size: 0.8rem;
+        }
+
+        .calendar--compact .nav-btn {
+            width: 1.5rem;
+            height: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .calendar--compact .calendar-weekdays {
+            font-size: 0.52rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .calendar--compact .calendar-grid {
+            flex: none;
+            grid-auto-rows: 1.35rem;
+            gap: 1px;
+            /* 6 filas fijas: el mes no cambia de alto al cargar celdas/API */
+            min-height: calc(6 * 1.35rem + 5 * 1px);
+        }
+
+        .calendar--compact .calendar-footer {
+            margin-top: 0.35rem;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .calendar--compact .calendar-footer .muted-text {
+            font-size: 0.65rem;
+        }
+
+        .calendar--compact .calendar-footer .btn-secondary {
+            padding: 0.22rem 0.45rem;
+            font-size: 0.68rem;
+        }
+
+        .calendar--compact .calendar-grid :global(.day-empty),
+        .calendar--compact .calendar-grid :global(.day-cell) {
+            height: 1.35rem;
+            min-height: 0;
+        }
+
+        .calendar--compact .calendar-grid :global(.day-number) {
+            font-size: 0.62rem;
+        }
+
+        .calendar--compact .calendar-grid :global(.day-time) {
+            display: none;
+        }
+
+        .calendar--compact .calendar-grid :global(.day-dots) {
+            gap: 1px;
+        }
+
+        .calendar--compact .calendar-grid :global(.day-dot) {
+            width: 3px;
+            height: 3px;
+        }
     }
 
     /*
@@ -875,25 +951,65 @@ const transitionName = 'calendar';
             padding: 0.06rem 0.18rem;
         }
     }
+
+    /* Con celdas de ~35px el título de la tarea es ilegible: cada chip se
+       reduce a una barra con el color de la tarea. */
+    @media (max-width: 480px) {
+        .calendar--large .calendar-grid :global(.day-tasks) {
+            gap: 2px;
+            justify-content: flex-start;
+        }
+
+        .calendar--large .calendar-grid :global(.day-task) {
+            flex: none;
+            height: 4px;
+            padding: 0;
+            font-size: 0;
+            line-height: 0;
+            border-left: none;
+            border-radius: 2px;
+            background-color: var(--task-color, var(--color-primary));
+        }
+
+        .calendar--large
+            .calendar-grid
+            :global(.day-cell.is-selected .day-task) {
+            background-color: #fff;
+        }
+
+        .calendar--large .calendar-grid :global(.day-task-more) {
+            font-size: 0.45rem;
+        }
+    }
 </style>
+
 
 <style is:global>
     /*
-     * Duración (1s) de la view transition del calendario. Astro expone cada
-     * `transition:name` mediante los pseudo-elementos del View Transition API:
-     *  - ::view-transition-group()  → interpolación de posición/tamaño (morph)
-     *  - ::view-transition-old/new()→ cross-fade de la instantánea vieja/nueva
-     * Deben ir en un bloque `is:global` porque son pseudo-elementos del viewport
-     * (no dependen del scope `data-astro-cid-*` del componente).
-     */
+      View transition del calendario (`transition:name="calendar"`).
+      Sin width/height 100% + object-fit en old/new, el UA usa block-size:auto
+      y el morph (compact → large) se estira de más; al terminar salta al
+      tamaño real. overflow:clip mantiene el par dentro del group.
+    */
     ::view-transition-group(calendar) {
-        animation-duration: 3s;
+        animation-duration: 300ms;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
         /* Viaja por encima del listado de tareas al regresar al aside. */
         z-index: 1000;
+        overflow: clip;
+    }
+
+    ::view-transition-image-pair(calendar) {
+        isolation: isolate;
     }
 
     ::view-transition-old(calendar),
     ::view-transition-new(calendar) {
-        animation-duration: 3s;
+        animation-duration: 300ms;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        overflow: clip;
     }
 </style>

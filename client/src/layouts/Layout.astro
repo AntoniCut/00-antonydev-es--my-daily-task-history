@@ -1,11 +1,14 @@
 ---
+
 /*
  *  ----------------------------------------------------------------  *
  *  -----  Layout.astro  --  /client/src/layouts/Layout.astro  -----  *
  *  ----------------------------------------------------------------  *
  */
+
 import { ClientRouter } from 'astro:transitions';
 import Sidebar from '../components/Sidebar.astro';
+
 
 interface Props {
     title: string;
@@ -26,55 +29,109 @@ const {
     fitViewport = false,
     calendarDate,
 } = Astro.props;
+
+
 ---
+
 
 <!doctype html>
 <html lang="es">
+    
     <head>
+        
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        
         <meta
             name="description"
             content="Dashboard de gestión de tareas y control del tiempo invertido"
         />
+        
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="app-favicon" />
+        
         <script is:inline>
+            
             (() => {
+                
+                /** - key: clave del localStorage */
                 const key = 'theme';
+                
+                /** - stored: valor del localStorage */
                 const stored = localStorage.getItem(key);
+                
+                /** - theme: tema actual */
                 const theme =
+                    
                     stored === 'light' || stored === 'dark'
+                        
                         ? stored
+                        
                         : window.matchMedia('(prefers-color-scheme: light)')
                                 .matches
                           ? 'light'
                           : 'dark';
+                
+                
+                /** - document: establece el tema en el documento */
                 document.documentElement.setAttribute('data-theme', theme);
+                
+                /** - document: establece el color scheme en el documento */
                 document.documentElement.style.colorScheme = theme;
 
-                // Icono invertido respecto al tema (claro↔oscuro)
+                /** - favicon: icono invertido respecto al tema (claro↔oscuro) */
                 const favicon = document.getElementById('app-favicon');
+                
+                //  -----  si favicon es un elemento de tipo HTMLLinkElement,     -----
+                //  -----  se establece el href del favicon dependiendo del tema  -----
                 if (favicon instanceof HTMLLinkElement) {
                     favicon.href =
                         theme === 'dark'
                             ? '/favicon-light.svg'
                             : '/favicon-dark.svg';
                 }
-            })();
-        </script>
-        <ClientRouter />
-        <title>{title}</title>
-    </head>
-    <body>
-        <div class:list={['shell', { 'fit-viewport': fitViewport }]}>
-            <Sidebar active={active} calendarDate={calendarDate} />
 
+            })();
+
+        </script>
+        
+        <ClientRouter />
+        
+        <title>
+            {title}
+        </title>
+
+    </head>
+    
+    
+    <body>
+        
+        <!--  -----  shell de la página  ----- -->
+        <div 
+            class:list={[
+                'shell', 
+                { 'fit-viewport': fitViewport }
+            ]}
+        >
+            
+            <!--  -----  sidebar de la página  ----- -->
+            <Sidebar 
+                active={active} 
+                calendarDate={calendarDate} 
+            />
+
+            <!--  -----  contenido de la página  ----- -->
             <div class="content">
+                
+                <!--  -----  header de la página  ----- -->
                 <header class="page-header">
+                    
+                    <!--  -----  texto del header  ----- -->
                     <div class="page-header-text">
                         <h1>{heading}</h1>
                         <p>{subtitle}</p>
                     </div>
+                    
+                    <!--  -----  botón de cambio de tema  ----- -->
                     <button
                         type="button"
                         class="theme-toggle"
@@ -82,20 +139,30 @@ const {
                         aria-label="Cambiar tema"
                         title="Cambiar tema"
                     >
-                        <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
-                        <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+                        <span class="theme-icon theme-icon-sun" aria-hidden="true"> ☀ </span>
+                        <span class="theme-icon theme-icon-moon" aria-hidden="true"> ☾ </span>
                         <span class="theme-label" data-theme-label>Tema</span>
                     </button>
+
                 </header>
+
+                <!--  -----  contenido principal de la página  ----- -->
                 <main class="page-main">
                     <slot />
                 </main>
+
             </div>
+
         </div>
+
     </body>
+
 </html>
 
+
+
 <script>
+    
     import {
         applyTheme,
         resolveTheme,
@@ -103,48 +170,118 @@ const {
         type Theme,
     } from '../lib/theme';
 
+
     // ClientRouter reemplaza el documento: reaplicar el tema tras cada navegación.
-    const syncTheme = () => applyTheme(resolveTheme());
+    
+    /**
+     * ---------------------------
+     * -----  `syncTheme()`  -----
+     * ---------------------------
+     * - Aplica el tema actual al documento.
+     * - Se ejecuta después de cada navegación.
+     */
+    
+     const syncTheme = () => applyTheme(resolveTheme());
+    
+
+    //  -----  se ejecuta después de cada navegación  -----
     document.addEventListener('astro:after-swap', syncTheme);
+    
+    //  -----  se ejecuta al cargar la página  -----
     syncTheme();
 
-    const labelFor = (theme: Theme): string =>
+
+    /**
+     * --------------------------------------
+     * -----  `labelFor(theme: Theme)`  -----
+     * --------------------------------------
+     * - Obtiene el label del botón de cambio de tema.
+     */
+    
+     const labelFor = (theme: Theme): string =>
         theme === 'dark' ? 'Modo oscuro' : 'Modo claro';
 
-    const syncToggle = (): void => {
-        const theme = resolveTheme();
-        const button = document.getElementById('theme-toggle');
-        if (!(button instanceof HTMLButtonElement)) return;
 
+    /**
+     * ---------------------------
+     * -----  `syncToggle()`  -----
+     * ---------------------------
+     * - Sincroniza el botón de cambio de tema con el tema actual.
+     */
+    
+    const syncToggle = (): void => {
+        
+        /** - theme: tema actual */
+        const theme = resolveTheme();
+        
+        /** - button: botón de cambio de tema */
+        const button = document.getElementById('theme-toggle');
+        
+
+        //  -----  si button no es un elemento de tipo HTMLButtonElement, se retorna -----
+        if (!(button instanceof HTMLButtonElement)) 
+            return;
+
+        //  -----  button: establece el aria-label y el title del botón de cambio de tema  -----
         button.setAttribute(
             'aria-label',
             theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
         );
+
+        //  -----  button: establece el title del botón de cambio de tema  -----
         button.title =
             theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
 
+        /** - label: etiqueta del botón de cambio de tema */
         const label = button.querySelector('[data-theme-label]');
-        if (label) label.textContent = labelFor(theme);
+        
+        if (label) 
+            label.textContent = labelFor(theme);
+
     };
 
+
+    /**
+     * ---------------------------
+     * -----  `bindToggle()`  -----
+     * ---------------------------
+     * - Vincula el evento click al botón de cambio de tema.
+     */
+    
     const bindToggle = (): void => {
+        
+        /** - button: botón de cambio de tema */
         const button = document.getElementById('theme-toggle');
-        if (!(button instanceof HTMLButtonElement)) return;
+        
+        //  -----  si button no es un elemento de tipo HTMLButtonElement, se retorna -----
+        if (!(button instanceof HTMLButtonElement)) 
+            return;
+        
+        //  -----  si button ya está vinculado, se sincroniza el botón de cambio de tema -----
         if (button.dataset.bound === 'true') {
             syncToggle();
             return;
         }
 
+        //  -----  button: establece el dataset.bound en true -----
         button.dataset.bound = 'true';
+
+        //  -----  button: añade el evento click al botón de cambio de tema -----
         button.addEventListener('click', () => {
             toggleTheme();
             syncToggle();
         });
+        
+        //  -----  se sincroniza el botón de cambio de tema -----
         syncToggle();
     };
 
+    //  -----  se ejecuta al cargar la página  -----
     document.addEventListener('astro:page-load', bindToggle);
+
+    //  -----  se vincula el evento click al botón de cambio de tema -----
     bindToggle();
+
 </script>
 
 <style>
@@ -177,13 +314,13 @@ const {
         align-items: flex-start;
         justify-content: space-between;
         gap: 1rem;
-        padding: 1.75rem 2rem 1.25rem;
+        padding: 1.1rem 1.5rem 0.9rem;
         background-color: var(--color-surface);
         border-bottom: 1px solid var(--color-border);
     }
 
     .shell.fit-viewport .page-header {
-        padding-block: 1rem 0.85rem;
+        padding-block: 0.85rem 0.7rem;
         flex-shrink: 0;
     }
 
@@ -245,10 +382,10 @@ const {
     }
 
     .page-main {
-        padding: 1.5rem 2rem 2.5rem;
+        padding: 1.25rem 1.5rem 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 1.25rem;
     }
 
     .shell.fit-viewport .page-main {
@@ -257,6 +394,14 @@ const {
         overflow: hidden;
         padding-block: 1rem 1.25rem;
         gap: 0;
+    }
+
+    /* El hijo directo debe ocupar el alto del main; si vive solo en el
+       <style> de cada página, ClientRouter a veces no lo aplica hasta
+       recargar y el scroll interno no aparece. */
+    .shell.fit-viewport .page-main > :global(*) {
+        flex: 1;
+        min-height: 0;
     }
 
     @media (max-width: 900px) {
@@ -269,24 +414,98 @@ const {
             padding-inline: 1.25rem;
         }
 
+        .page-header {
+            padding-block: 1rem 0.85rem;
+        }
+
         .shell.fit-viewport {
             /* En pantallas pequeñas se permite el scroll de página en lugar
                del scroll interno del contenedor de tareas. */
             height: auto;
-            min-height: 100dvh;
+            /* svh: estable al mostrar/ocultar la barra del navegador (dvh salta). */
+            min-height: 100svh;
             overflow: visible;
             /* Menú (+ calendario acoplado) arriba; el contenido fluye */
             grid-template-rows: auto auto;
+            /* Sin esto, el espacio sobrante se reparte entre filas
+               y el aside/calendario queda con un hueco enorme debajo. */
+            align-content: start;
         }
 
         .shell.fit-viewport .content {
             overflow: visible;
+            flex: none;
+            min-height: 0;
+        }
+
+        .shell.fit-viewport .page-header {
+            padding-block: 1rem 0.85rem;
         }
 
         .shell.fit-viewport .page-main {
             flex: none;
             min-height: 0;
             overflow: visible;
+            padding-block: 0.85rem 1rem;
+        }
+
+        .shell.fit-viewport .page-main > :global(*) {
+            flex: none !important;
+            min-height: 0;
+            max-height: none;
+            height: auto;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .page-header {
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            align-items: center;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+            line-height: 1.2;
+        }
+
+        .page-header p {
+            font-size: 0.82rem;
+            margin-top: 0.15rem;
+        }
+
+        .theme-toggle {
+            gap: 0.35rem;
+            padding: 0.4rem 0.55rem;
+            font-size: 0.78rem;
+        }
+
+        .theme-label {
+            /* Solo icono: el texto aprieta el título del día */
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .page-header,
+        .page-main {
+            padding-inline: 0.7rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.15rem;
+        }
+
+        .page-header p {
+            font-size: 0.78rem;
         }
     }
 </style>
@@ -434,7 +653,7 @@ const {
         border: 1px solid var(--color-border);
         border-radius: var(--radius);
         box-shadow: var(--shadow);
-        padding: 1.25rem;
+        padding: 1rem 1.1rem;
     }
 
     .panel-title {
@@ -573,7 +792,12 @@ const {
         padding: 1.5rem 0;
     }
 
+    /* inline-flex + min-height: varios badges se rellenan por JS y, vacíos,
+       colapsan y desplazan el contenido al llegar los datos. */
     .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.45rem;
         background-color: var(--color-bg);
         border: 1px solid var(--color-border);
         border-radius: 999px;
@@ -594,43 +818,16 @@ const {
         color: var(--color-primary);
     }
 
-    /* --------------------  View Transitions  -------------------- */
-
-    ::view-transition-old(calendar-large),
-    ::view-transition-new(calendar-large),
-    ::view-transition-old(calendar-compact),
-    ::view-transition-new(calendar-compact) {
-        animation-duration: 0.35s;
-        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-        height: 100%;
-        overflow: clip;
-    }
-
-    ::view-transition-old(day-log),
-    ::view-transition-new(day-log) {
-        animation-duration: 0.3s;
-        animation-timing-function: ease;
-    }
-
-    ::view-transition-old(day-log) {
-        animation-name: day-log-fade-out;
-    }
-
-    ::view-transition-new(day-log) {
-        animation-name: day-log-fade-in;
-    }
-
-    @keyframes day-log-fade-out {
-        to {
-            opacity: 0;
-            transform: translateY(0.5rem);
+    @media (max-width: 400px) {
+        .panel {
+            padding: 0.85rem 0.7rem;
         }
-    }
 
-    @keyframes day-log-fade-in {
-        from {
-            opacity: 0;
-            transform: translateY(0.75rem);
+        .btn-primary,
+        .btn-secondary,
+        .btn-danger {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.85rem;
         }
     }
 </style>
