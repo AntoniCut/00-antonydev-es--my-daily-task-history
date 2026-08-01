@@ -113,25 +113,22 @@ const transitionName = 'calendar';
     const MAX_TASK_CHIPS = 3;
 
     /**
-     * El `calendar-compact` en desktop es flotante y arrastrable; arranca
-     * `visibility: hidden` hasta que el script (en `astro:page-load`) lo ancla
-     * con `dockFixed`. Como el navegador toma el snapshot del nuevo DOM ANTES
-     * de que ese script corra, el `::view-transition-new(calendar)` sale
-     * invisible y el navegador recorta el morph (de ahí el "va rápido" al
-     * regresar del dashboard al día).
-     *
-     * Lo resolvemos anclando el compacto del documento entrante a su posición
-     * guardada en `astro:before-swap` (antes del snapshot), replicando la
-     * lógica de `dockFixed`. `event.newDocument` es el documento destino:
-     * parchearlo aquí persiste tras el swap.
+     * ----------------------------------------
+     * -----  `preAnchorCompact(doc)`  -----
+     * ----------------------------------------
+     * - Preancla el calendario compacto antes del swap para conservar el morph.
      */
     const COMPACT_STORAGE_KEY = 'calendar-compact-position';
     let preSwapBound = false;
 
     const preAnchorCompact = (doc: Document): void => {
+        //  -----  si es móvil, no usar el modo flotante  -----
         if (window.matchMedia('(max-width: 900px)').matches) return;
 
-        const cal = doc.getElementById('calendar');
+        // - `Calendario del documento entrante`
+        const cal = doc.getElementById('calendar') as HTMLDivElement | null;
+
+        //  -----  si no existe el calendario compacto, no anclar  -----
         if (!(cal instanceof HTMLElement) || cal.dataset.variant !== 'compact') {
             return;
         }
@@ -149,7 +146,7 @@ const transitionName = 'calendar';
             /* ignore */
         }
 
-        // posición por defecto: margen inferior-derecho del sidebar izquierdo
+        //  -----  si no hay posición guardada, usar la posición por defecto  -----
         if (!x && !y) {
             x = 300;
             y = 80;
@@ -183,19 +180,45 @@ const transitionName = 'calendar';
     }
 
     onPageReady((signal) => {
-        const root = document.getElementById('calendar');
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Calendario raíz del componente`
+        const root = document.getElementById('calendar') as HTMLDivElement | null;
         if (!root) return;
 
         const variant = root.dataset.variant === 'compact' ? 'compact' : 'large';
+
+        // - `Título del mes visible`
         const titleEl = query<HTMLHeadingElement>(root, '[data-title]');
+
+        // - `Rejilla de días del calendario`
         const gridEl = query<HTMLDivElement>(root, '[data-grid]');
+
+        // - `Texto del total mensual`
         const totalEl = query<HTMLParagraphElement>(root, '[data-month-total]');
+
+        // - `Botón para ir al mes anterior`
         const prevBtn = query<HTMLButtonElement>(root, '[data-prev]');
+
+        // - `Botón para ir al mes siguiente`
         const nextBtn = query<HTMLButtonElement>(root, '[data-next]');
+
+        // - `Botón para volver al día actual`
         const todayBtn = query<HTMLButtonElement>(root, '[data-today]');
 
         const today = todayKey();
-        const pad = (value: number) => String(value).padStart(2, '0');
+
+        /**
+         * -------------------------
+         * -----  `pad(value)`  -----
+         * -------------------------
+         * - Rellena un número a dos dígitos para formar claves de fecha.
+         */
+        const pad = (value: number): string => String(value).padStart(2, '0');
 
         const initialSelected = root.dataset.selected || today;
         let [viewYear, viewMonth] = [
@@ -205,11 +228,23 @@ const transitionName = 'calendar';
         let selectedDate = initialSelected;
         let daysByDate = new Map<string, DayInfo>();
 
+        /**
+         * -------------------------------
+         * -----  `goToDay(dateKey)`  -----
+         * -------------------------------
+         * - Navega a la vista diaria de la fecha seleccionada.
+         */
         const goToDay = (dateKey: string): void => {
             selectedDate = dateKey;
             void navigate(`/dia/${dateKey}`);
         };
 
+        /**
+         * -------------------------------
+         * -----  `loadMonth()`  -----
+         * -------------------------------
+         * - Carga los registros del mes visible y los agrupa por día.
+         */
         const loadMonth = async (): Promise<void> => {
             const monthKey = `${viewYear}-${pad(viewMonth + 1)}-01`;
             const { from, to } = monthRange(monthKey);
@@ -234,11 +269,19 @@ const transitionName = 'calendar';
                 }
 
                 daysByDate = next;
-            } catch {
+            }
+            //  -----  si la carga falla, vaciar el mapa de días  -----
+            catch {
                 daysByDate = new Map();
             }
         };
 
+        /**
+         * ------------------------------------------
+         * -----  `renderTaskChips(cell, tasks)`  -----
+         * ------------------------------------------
+         * - Renderiza chips de tareas dentro de una celda del calendario grande.
+         */
         const renderTaskChips = (
             cell: HTMLButtonElement,
             tasks: DayTask[],
@@ -266,6 +309,12 @@ const transitionName = 'calendar';
             cell.appendChild(list);
         };
 
+        /**
+         * -------------------------------------
+         * -----  `renderDots(cell, tasks)`  -----
+         * -------------------------------------
+         * - Renderiza puntos de tareas en la versión compacta del calendario.
+         */
         const renderDots = (
             cell: HTMLButtonElement,
             tasks: DayTask[],
@@ -281,9 +330,15 @@ const transitionName = 'calendar';
             cell.appendChild(dots);
         };
 
+        /**
+         * ----------------------------
+         * -----  `render()`  -----
+         * ----------------------------
+         * - Pinta la rejilla del mes actualmente visible.
+         */
         const render = (): void => {
             titleEl.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
-            gridEl.innerHTML = '';
+            gridEl.replaceChildren();
 
             const firstWeekday =
                 (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
@@ -337,11 +392,23 @@ const transitionName = 'calendar';
             totalEl.textContent = `Total del mes: ${formatMinutes(monthMinutes)}`;
         };
 
+        /**
+         * -----------------------------
+         * -----  `refresh()`  -----
+         * -----------------------------
+         * - Recarga los datos del mes y vuelve a renderizar el calendario.
+         */
         const refresh = async (): Promise<void> => {
             await loadMonth();
             render();
         };
 
+        /**
+         * --------------------------------
+         * -----  `moveMonth(offset)`  -----
+         * --------------------------------
+         * - Cambia el mes visible en el desplazamiento indicado.
+         */
         const moveMonth = (offset: number): void => {
             const date = new Date(viewYear, viewMonth + offset, 1);
             viewYear = date.getFullYear();
@@ -365,11 +432,26 @@ const transitionName = 'calendar';
         onDataChanged(() => void refresh(), { signal });
 
         if (variant === 'compact') {
-            const host = document.getElementById('sidebar-calendar-host');
+            /*
+                *  ---------------------------------  *
+                *  -----  Referencias al HTML  -----  *
+                *  ---------------------------------  *
+            */
+
+            // - `Contenedor del calendario compacto en el sidebar`
+            const host = document.getElementById(
+                'sidebar-calendar-host',
+            ) as HTMLDivElement | null;
             const storageKey = 'calendar-compact-position';
             const mobileQuery = window.matchMedia('(max-width: 900px)');
             let dragCleanup: (() => void) | null = null;
 
+            /**
+             * ------------------------------------
+             * -----  `clearFloating()`  -----
+             * ------------------------------------
+             * - Restablece el calendario compacto al modo acoplado.
+             */
             const clearFloating = (): void => {
                 dragCleanup?.();
                 dragCleanup = null;
@@ -379,6 +461,12 @@ const transitionName = 'calendar';
                 host?.classList.add('is-calendar-docked');
             };
 
+            /**
+             * -------------------------------------
+             * -----  `enableFloating()`  -----
+             * -------------------------------------
+             * - Activa el modo flotante y arrastrable del calendario compacto.
+             */
             const enableFloating = (): void => {
                 root.classList.remove('is-docked');
                 host?.classList.remove('is-calendar-docked');
@@ -396,11 +484,19 @@ const transitionName = 'calendar';
                 }
             };
 
+            /**
+             * --------------------------------
+             * -----  `syncLayout()`  -----
+             * --------------------------------
+             * - Sincroniza el modo móvil o flotante según el viewport.
+             */
             const syncLayout = (): void => {
+                //  -----  si es móvil, acoplar el calendario al flujo  -----
                 if (mobileQuery.matches) {
-                    // Pantallas pequeñas: calendario en flujo, bajo el menú
                     clearFloating();
-                } else {
+                }
+                //  -----  si es desktop, activar el modo flotante  -----
+                else {
                     enableFloating();
                 }
             };
@@ -418,7 +514,7 @@ const transitionName = 'calendar';
                 { signal },
             );
         } else {
-            // Quitar restos del modo flotante (fixed / tamaño) al volver al dashboard
+            //  -----  si está en modo grande, limpiar restos del modo flotante  -----
             root.removeAttribute('style');
             root.classList.remove(
                 'is-draggable',

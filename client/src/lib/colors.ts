@@ -1,10 +1,9 @@
 /*
- *  ----------------------------------------------------  *
- *  -----  colors.ts  --  /client/src/lib/colors.ts  -----  *
- *  ----------------------------------------------------  *
- */
+    *  --------------------------------------------------------------------  *
+    *  -----  colors.ts  --  /client/src/lib/colors.ts  -----  *
+    *  --------------------------------------------------------------------  *
+*/
 
-/** Paleta asignada a las tareas para identificarlas en la interfaz. */
 export const TASK_COLORS = [
     '#5b8def',
     '#4fbf8b',
@@ -16,9 +15,21 @@ export const TASK_COLORS = [
     '#8ab84f',
 ] as const;
 
+/**
+ * ----------------------------------------
+ * -----  `nextColor(usedCount)`  -----
+ * ----------------------------------------
+ * - Devuelve el siguiente color disponible según la cantidad ya usada.
+ */
 export const nextColor = (usedCount: number): string =>
     TASK_COLORS[usedCount % TASK_COLORS.length];
 
+/**
+ * --------------------------------------------------------
+ * -----  `resolveSubtaskColor(subtask, task)`  -----
+ * --------------------------------------------------------
+ * - Resuelve el color final de una subtarea priorizando su color válido.
+ */
 export const resolveSubtaskColor = (
     subtask: { color?: string },
     task: { color: string },

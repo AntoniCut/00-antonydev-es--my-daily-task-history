@@ -82,31 +82,64 @@
         yearRange,
         type DateRange,
     } from '../lib/time';
-    import type { ReportSummary } from '../types/task';
+    import type { ReportSummary } from '../../types/types';
 
     onPageReady((signal) => {
-        const root = document.getElementById('report-panel');
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Panel raíz del informe`
+        const root = document.getElementById('report-panel') as HTMLDivElement | null;
         if (!root) return;
 
+        // - `Formulario de filtros del informe`
         const form = query<HTMLFormElement>(root, '[data-form]');
+
+        // - `Selector del rango temporal`
         const rangeSelect = query<HTMLSelectElement>(root, '[data-range]');
+
+        // - `Campo fecha inicial personalizada`
         const fromInput = query<HTMLInputElement>(root, '[data-from]');
+
+        // - `Campo fecha final personalizada`
         const toInput = query<HTMLInputElement>(root, '[data-to]');
+
+        // - `Bloques que contienen el rango personalizado`
         const customFields = [
             ...root.querySelectorAll<HTMLElement>('[data-custom]'),
         ];
+
+        // - `Botón para exportar el informe a CSV`
         const exportBtn = query<HTMLButtonElement>(root, '[data-export]');
 
+        // - `Título con el total del periodo`
         const totalEl = query<HTMLHeadingElement>(root, '[data-total]');
+
+        // - `Etiqueta textual del rango activo`
         const rangeLabelEl = query<HTMLParagraphElement>(
             root,
             '[data-range-label]',
         );
+
+        // - `Contador de registros del informe`
         const entriesEl = query<HTMLSpanElement>(root, '[data-entries]');
+
+        // - `Mensaje de error del panel`
         const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
+
+        // - `Listado principal por tareas`
         const listEl = query<HTMLUListElement>(root, '[data-list]');
+
+        // - `Estado vacío del resumen principal`
         const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
+
+        // - `Listado del reparto por día`
         const daysEl = query<HTMLUListElement>(root, '[data-days]');
+
+        // - `Estado vacío del reparto diario`
         const daysEmptyEl = query<HTMLParagraphElement>(
             root,
             '[data-days-empty]',
@@ -114,6 +147,12 @@
 
         let summary: ReportSummary | null = null;
 
+        /**
+         * ----------------------------------
+         * -----  `resolveRange()`  -----
+         * ----------------------------------
+         * - Resuelve el rango temporal según la opción seleccionada.
+         */
         const resolveRange = (): DateRange => {
             const today = todayKey();
             switch (rangeSelect.value) {
@@ -135,6 +174,12 @@
             }
         };
 
+        /**
+         * ----------------------------------------
+         * -----  `bar(minutes, max, color)`  -----
+         * ----------------------------------------
+         * - Crea la barra visual proporcional de una fila del informe.
+         */
         const bar = (
             minutes: number,
             max: number,
@@ -148,6 +193,12 @@
             return track;
         };
 
+        /**
+         * -----------------------------------
+         * -----  `renderReport(report)`  -----
+         * -----------------------------------
+         * - Pinta el resumen principal y el reparto diario del informe.
+         */
         const renderReport = (report: ReportSummary): void => {
             const tasks = report.tasks.filter((task) => task.minutes > 0);
             const max = tasks.reduce(
@@ -196,6 +247,7 @@
                         ),
                     ];
 
+                    //  -----  si hay desglose hijo, renderizar la sublista  -----
                     if (children.length) {
                         const sublist = create('ul', {
                             className: 'report-sublist',
@@ -249,6 +301,12 @@
             daysEmptyEl.hidden = report.days.length > 0;
         };
 
+        /**
+         * --------------------------
+         * -----  `load()`  -----
+         * --------------------------
+         * - Carga el informe del rango actual y actualiza la vista.
+         */
         const load = async (): Promise<void> => {
             const range = resolveRange();
             fromInput.value = range.from;
@@ -259,20 +317,39 @@
                 summary = await api.getSummary(range);
                 renderReport(summary);
                 showError(errorEl, null);
-            } catch (error) {
+            }
+            //  -----  si la consulta falla, mostrar el error  -----
+            catch (error) {
                 showError(errorEl, (error as Error).message);
             } finally {
                 root.removeAttribute('data-loading');
             }
         };
 
-        /** Celda CSV segura para Excel (comillas dobles escapadas). */
+        /**
+         * -------------------------------
+         * -----  `csvCell(value)`  -----
+         * -------------------------------
+         * - Escapa una celda CSV para que sea segura en Excel.
+         */
         const csvCell = (value: string): string =>
             `"${value.replaceAll('"', '""')}"`;
 
+        /**
+         * ----------------------------------------
+         * -----  `hoursForCsv(minutes)`  -----
+         * ----------------------------------------
+         * - Convierte minutos a horas decimales con coma para CSV.
+         */
         const hoursForCsv = (minutes: number): string =>
             (minutes / 60).toFixed(2).replace('.', ',');
 
+        /**
+         * -------------------------------------------
+         * -----  `downloadCsv(filename, rows)`  -----
+         * -------------------------------------------
+         * - Genera y descarga el archivo CSV del informe actual.
+         */
         const downloadCsv = (filename: string, rows: string[][]): void => {
             const csv = rows
                 .map((row) => row.map(csvCell).join(';'))
@@ -294,7 +371,14 @@
             window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
         };
 
+        /**
+         * -------------------------------
+         * -----  `exportCsv()`  -----
+         * -------------------------------
+         * - Exporta a CSV los registros del rango actualmente cargado.
+         */
         const exportCsv = async (): Promise<void> => {
+            //  -----  si todavía no hay resumen, no exportar  -----
             if (!summary) return;
 
             try {
@@ -303,6 +387,7 @@
                     to: summary.to,
                 });
 
+                //  -----  si no hay registros, mostrar un aviso visual  -----
                 if (entries.length === 0) {
                     showError(
                         errorEl,
@@ -339,7 +424,9 @@
                     rows,
                 );
                 showError(errorEl, null);
-            } catch (error) {
+            }
+            //  -----  si la exportación falla, mostrar el error  -----
+            catch (error) {
                 showError(errorEl, (error as Error).message);
             }
         };
@@ -349,6 +436,8 @@
             () => {
                 const isCustom = rangeSelect.value === 'custom';
                 for (const field of customFields) field.hidden = !isCustom;
+
+                //  -----  si el rango no es personalizado, recargar al instante  -----
                 if (!isCustom) void load();
             },
             { signal },
@@ -356,7 +445,7 @@
 
         form.addEventListener(
             'submit',
-            (event) => {
+            (event: SubmitEvent) => {
                 event.preventDefault();
                 void load();
             },

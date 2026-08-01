@@ -86,39 +86,68 @@
 <script>
     import { api } from '../lib/api';
     import { nextColor, resolveSubtaskColor } from '../lib/colors';
-    import { create, onPageReady, query, showError } from '../lib/dom';
+    import { create, onPageReady, query, showConfirm, showError } from '../lib/dom';
     import { emitDataChanged, onDataChanged } from '../lib/events';
     import { formatMinutes } from '../lib/time';
-    import type { Subtask, SubtaskDraft, Task, TimeEntry } from '../types/task';
+    import type { Subtask, SubtaskDraft, Task, TimeEntry } from '../../types/types';
 
     onPageReady((signal) => {
-        const root = document.getElementById('task-manager');
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Contenedor raíz del gestor de tareas`
+        const root = document.getElementById('task-manager') as HTMLDivElement | null;
         if (!root) return;
 
+        // - `Formulario para crear tareas`
         const newForm = query<HTMLFormElement>(root, '[data-new-form]');
+
+        // - `Campo del título de la tarea`
         const titleInput = query<HTMLInputElement>(root, '[data-title]');
+
+        // - `Campo de la descripción de la tarea`
         const descInput = query<HTMLTextAreaElement>(
             root,
             '[data-description]',
         );
+
+        // - `Selector de color de la tarea`
         const colorInput = query<HTMLInputElement>(root, '[data-color]');
+
+        // - `Contenedor de filas de subtareas`
         const subtaskInputs = query<HTMLDivElement>(
             root,
             '[data-subtask-inputs]',
         );
+
+        // - `Botón para añadir otra subtarea`
         const addInputBtn = query<HTMLButtonElement>(root, '[data-add-input]');
+
+        // - `Mensaje de error del formulario de alta`
         const newErrorEl = query<HTMLParagraphElement>(
             root,
             '[data-new-error]',
         );
 
+        // - `Mensaje de error del árbol de tareas`
         const treeErrorEl = query<HTMLParagraphElement>(
             root,
             '[data-tree-error]',
         );
+
+        // - `Listado de tareas renderizado`
         const listEl = query<HTMLUListElement>(root, '[data-list]');
+
+        // - `Estado vacío del árbol`
         const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
+
+        // - `Contador de tareas activas e inactivas`
         const countEl = query<HTMLParagraphElement>(root, '[data-count]');
+
+        // - `Checkbox para mostrar tareas dadas de baja`
         const showInactiveInput = query<HTMLInputElement>(
             root,
             '[data-show-inactive]',
@@ -128,9 +157,21 @@
 
         /* ----------  Totales (solo para avisos de borrado)  ----------- */
 
+        /**
+         * --------------------------------------
+         * -----  `sumEntries(entries)`  -----
+         * --------------------------------------
+         * - Suma los minutos de una colección de registros.
+         */
         const sumEntries = (entries: TimeEntry[]): number =>
             entries.reduce((total, entry) => total + entry.minutes, 0);
 
+        /**
+         * -----------------------------------
+         * -----  `taskMinutes(task)`  -----
+         * -----------------------------------
+         * - Calcula el tiempo total de una tarea y sus subtareas.
+         */
         const taskMinutes = (task: Task): number =>
             sumEntries(task.entries) +
             task.subtasks.reduce(
@@ -140,7 +181,12 @@
 
         /* ----------------------  Formularios inline  ------------------- */
 
-        /** Abre un formulario bajo la fila; si ya estaba abierto, lo cierra. */
+        /**
+         * ------------------------------------------
+         * -----  `togglePanel(host, kind, build)`  -----
+         * ------------------------------------------
+         * - Abre o cierra el panel inline asociado a una fila.
+         */
         const togglePanel = (
             host: HTMLElement,
             kind: string,
@@ -148,6 +194,8 @@
         ): void => {
             const open = host.querySelector(`[data-panel="${kind}"]`);
             host.replaceChildren();
+
+            //  -----  si ese panel ya estaba abierto, dejarlo cerrado  -----
             if (open) return;
 
             const panel = build();
@@ -156,6 +204,12 @@
             panel.querySelector<HTMLElement>('input, textarea')?.focus();
         };
 
+        /**
+         * ------------------------------------
+         * -----  `inlineInput(value, attrs)`  -----
+         * ------------------------------------
+         * - Crea un input de texto para formularios inline.
+         */
         const inlineInput = (
             value: string,
             attrs: Record<string, string> = {},
@@ -165,6 +219,12 @@
                 attrs: { value, ...attrs },
             });
 
+        /**
+         * --------------------------------------
+         * -----  `inlineColor(value, label)`  -----
+         * --------------------------------------
+         * - Crea un selector de color para formularios inline.
+         */
         const inlineColor = (value: string, label: string): HTMLInputElement =>
             create('input', {
                 className: 'inline-color',
@@ -175,6 +235,12 @@
                 },
             });
 
+        /**
+         * --------------------------------------
+         * -----  `inlineActions(submitText)`  -----
+         * --------------------------------------
+         * - Crea el bloque de acciones de un formulario inline.
+         */
         const inlineActions = (submitText: string): HTMLDivElement => {
             const actions = create('div', { className: 'inline-actions' });
             actions.append(
@@ -192,7 +258,12 @@
             return actions;
         };
 
-        /** Envuelve un formulario inline: cancelar recarga, submit delega en `save`. */
+        /**
+         * ---------------------------------------
+         * -----  `inlineForm(children, save)`  -----
+         * ---------------------------------------
+         * - Envuelve un formulario inline y delega su guardado.
+         */
         const inlineForm = (
             children: HTMLElement[],
             save: () => Promise<unknown>,
@@ -206,7 +277,7 @@
                 { signal },
             );
 
-            form.addEventListener('submit', (event) => {
+            form.addEventListener('submit', (event: SubmitEvent) => {
                 event.preventDefault();
                 save()
                     .then(emitDataChanged)
@@ -218,6 +289,12 @@
             return form;
         };
 
+        /**
+         * ---------------------------------------
+         * -----  `buildTaskEditForm(task)`  -----
+         * ---------------------------------------
+         * - Construye el formulario inline para editar una tarea.
+         */
         const buildTaskEditForm = (task: Task): HTMLFormElement => {
             const title = inlineInput(task.title, {
                 type: 'text',
@@ -244,6 +321,12 @@
             );
         };
 
+        /**
+         * -------------------------------------------------
+         * -----  `buildSubtaskEditForm(task, subtask)`  -----
+         * -------------------------------------------------
+         * - Construye el formulario inline para editar una subtarea.
+         */
         const buildSubtaskEditForm = (
             task: Task,
             subtask: Subtask,
@@ -267,6 +350,12 @@
             );
         };
 
+        /**
+         * --------------------------------------
+         * -----  `buildNewSubtaskForm(task)`  -----
+         * --------------------------------------
+         * - Construye el formulario inline para crear una subtarea.
+         */
         const buildNewSubtaskForm = (task: Task): HTMLFormElement => {
             const title = inlineInput('', {
                 type: 'text',
@@ -287,12 +376,24 @@
 
         /* -------------------------  Acciones  -------------------------- */
 
+        /**
+         * --------------------------------
+         * -----  `run(action)`  -----
+         * --------------------------------
+         * - Ejecuta una acción remota y propaga el refresco global.
+         */
         const run = (action: Promise<unknown>): void => {
             action
                 .then(emitDataChanged)
                 .catch((error: Error) => showError(treeErrorEl, error.message));
         };
 
+        /**
+         * ---------------------------------------------
+         * -----  `iconButton(text, title, onClick)`  -----
+         * ---------------------------------------------
+         * - Crea un botón de icono y vincula su acción.
+         */
         const iconButton = (
             text: string,
             title: string,
@@ -310,6 +411,12 @@
 
         /* -------------------------  Renderizado  ----------------------- */
 
+        /**
+         * --------------------------------------------
+         * -----  `renderSubtask(task, subtask)`  -----
+         * --------------------------------------------
+         * - Renderiza una fila de subtarea con sus acciones.
+         */
         const renderSubtask = (task: Task, subtask: Subtask): HTMLLIElement => {
             const item = create('li', { className: 'subtask-item' });
             if (!subtask.active) item.classList.add('is-inactive');
@@ -371,14 +478,16 @@
                         ),
                 ),
                 iconButton('🗑️', 'Eliminar subtarea', () => {
-                    if (
-                        !confirm(
-                            `¿Eliminar la subtarea "${subtask.title}" y sus ${formatMinutes(total)} registrados?`,
-                        )
-                    ) {
-                        return;
-                    }
-                    run(api.deleteSubtask(task.id, subtask.id));
+                    void showConfirm({
+                        title: 'Eliminar subtarea',
+                        message: `¿Eliminar la subtarea "${subtask.title}" y sus ${formatMinutes(total)} registrados?`,
+                        confirmText: 'Eliminar',
+                        danger: true,
+                    }).then((confirmed) => {
+                        //  -----  si se cancela la confirmación, no eliminar la subtarea  -----
+                        if (!confirmed) return;
+                        run(api.deleteSubtask(task.id, subtask.id));
+                    });
                 }),
             );
 
@@ -387,6 +496,12 @@
             return item;
         };
 
+        /**
+         * ----------------------------------
+         * -----  `renderTask(task)`  -----
+         * ----------------------------------
+         * - Renderiza una tarea con sus subtareas visibles.
+         */
         const renderTask = (task: Task): HTMLLIElement => {
             const item = create('li', { className: 'task-item' });
             if (!task.active) item.classList.add('is-inactive');
@@ -465,14 +580,16 @@
                         run(api.updateTask(task.id, { active: !task.active })),
                 ),
                 iconButton('🗑️', 'Eliminar tarea', () => {
-                    if (
-                        !confirm(
-                            `¿Eliminar "${task.title}", sus ${task.subtasks.length} subtareas y sus ${formatMinutes(total)} registrados?`,
-                        )
-                    ) {
-                        return;
-                    }
-                    run(api.deleteTask(task.id));
+                    void showConfirm({
+                        title: 'Eliminar tarea',
+                        message: `¿Eliminar "${task.title}", sus ${task.subtasks.length} subtareas y sus ${formatMinutes(total)} registrados?`,
+                        confirmText: 'Eliminar',
+                        danger: true,
+                    }).then((confirmed) => {
+                        //  -----  si se cancela la confirmación, no eliminar la tarea  -----
+                        if (!confirmed) return;
+                        run(api.deleteTask(task.id));
+                    });
                 }),
             );
 
@@ -482,6 +599,8 @@
             const visibleSubtasks = task.subtasks.filter(
                 (subtask) => subtask.active || showInactiveInput.checked,
             );
+
+            //  -----  si hay subtareas visibles, renderizar la lista hija  -----
             if (visibleSubtasks.length) {
                 const subtaskList = create('ul', { className: 'subtask-list' });
                 subtaskList.append(
@@ -495,6 +614,12 @@
             return item;
         };
 
+        /**
+         * ----------------------------
+         * -----  `render()`  -----
+         * ----------------------------
+         * - Pinta el árbol según el filtro de activas e inactivas.
+         */
         const render = (): void => {
             const visible = tasks.filter(
                 (task) => task.active || showInactiveInput.checked,
@@ -506,23 +631,43 @@
             countEl.textContent = `${active} de alta · ${tasks.length - active} de baja`;
         };
 
+        /**
+         * --------------------------
+         * -----  `load()`  -----
+         * --------------------------
+         * - Carga las tareas y refresca la vista principal.
+         */
         const load = async (): Promise<void> => {
             try {
                 tasks = await api.getTasks();
                 setDefaultTaskColor();
                 render();
                 showError(treeErrorEl, null);
-            } catch (error) {
+            }
+            //  -----  si la carga falla, mostrar el error  -----
+            catch (error) {
                 showError(treeErrorEl, (error as Error).message);
             }
         };
 
         /* ------------------  Alta de tareas con subtareas  -------------- */
 
+        /**
+         * ------------------------------------
+         * -----  `setDefaultTaskColor()`  -----
+         * ------------------------------------
+         * - Asigna el siguiente color sugerido para una nueva tarea.
+         */
         const setDefaultTaskColor = (): void => {
             colorInput.value = nextColor(tasks.length);
         };
 
+        /**
+         * --------------------------------
+         * -----  `addSubtaskInput()`  -----
+         * --------------------------------
+         * - Añade una nueva fila de subtarea al formulario de alta.
+         */
         const addSubtaskInput = (): void => {
             const row = create('div', { className: 'subtask-input-row' });
             const input = create('input', {
@@ -554,6 +699,12 @@
             input.focus();
         };
 
+        /**
+         * --------------------------------
+         * -----  `resetNewForm()`  -----
+         * --------------------------------
+         * - Restablece el formulario de alta a su estado inicial.
+         */
         const resetNewForm = (): void => {
             newForm.reset();
             setDefaultTaskColor();
@@ -566,7 +717,7 @@
 
         newForm.addEventListener(
             'submit',
-            (event) => {
+            (event: SubmitEvent) => {
                 event.preventDefault();
                 const subtasks = [
                     ...subtaskInputs.querySelectorAll<HTMLDivElement>(
@@ -578,6 +729,8 @@
                             row.querySelector<HTMLInputElement>(
                                 'input[type="text"]',
                             )?.value.trim() ?? '';
+
+                        //  -----  si el título está vacío, omitir la subtarea  -----
                         if (!title) return null;
 
                         const color =

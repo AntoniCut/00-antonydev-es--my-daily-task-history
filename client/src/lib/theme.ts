@@ -1,17 +1,28 @@
 /*
- *  ----------------------------------------------------  *
- *  -----  theme.ts  --  /client/src/lib/theme.ts  -----  *
- *  ----------------------------------------------------  *
- */
+    *  --------------------------------------------------------------------  *
+    *  -----  theme.ts  --  /client/src/lib/theme.ts  -----  *
+    *  --------------------------------------------------------------------  *
+*/
 
 export type Theme = 'light' | 'dark';
 
 export const THEME_STORAGE_KEY = 'theme';
 
-/** Favicon: modo oscuro → icono claro; modo claro → icono oscuro. */
+/**
+ * ------------------------------------------
+ * -----  `faviconForTheme(theme)`  -----
+ * ------------------------------------------
+ * - Resuelve el favicon que corresponde al tema activo.
+ */
 export const faviconForTheme = (theme: Theme): string =>
     theme === 'dark' ? '/favicon-light.svg' : '/favicon-dark.svg';
 
+/**
+ * --------------------------------------
+ * -----  `syncFavicon(theme)`  -----
+ * --------------------------------------
+ * - Sincroniza el favicon del documento con el tema recibido.
+ */
 const syncFavicon = (theme: Theme): void => {
     const href = faviconForTheme(theme);
     const existing =
@@ -31,7 +42,12 @@ const syncFavicon = (theme: Theme): void => {
     document.head.appendChild(link);
 };
 
-/** Resuelve el tema guardado o, si no hay, el del sistema. */
+/**
+ * ------------------------------------
+ * -----  `resolveTheme()`  -----
+ * ------------------------------------
+ * - Resuelve el tema guardado o, si no existe, usa la preferencia del sistema.
+ */
 export const resolveTheme = (): Theme => {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'light' || stored === 'dark') {
@@ -43,17 +59,35 @@ export const resolveTheme = (): Theme => {
         : 'dark';
 };
 
+/**
+ * ----------------------------------
+ * -----  `applyTheme(theme)`  -----
+ * ----------------------------------
+ * - Aplica el tema al documento y actualiza el favicon.
+ */
 export const applyTheme = (theme: Theme): void => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.style.colorScheme = theme;
     syncFavicon(theme);
 };
 
+/**
+ * --------------------------------
+ * -----  `setTheme(theme)`  -----
+ * --------------------------------
+ * - Guarda el tema elegido y lo aplica de inmediato.
+ */
 export const setTheme = (theme: Theme): void => {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
     applyTheme(theme);
 };
 
+/**
+ * ----------------------------------
+ * -----  `toggleTheme()`  -----
+ * ----------------------------------
+ * - Alterna entre modo claro y oscuro devolviendo el nuevo tema.
+ */
 export const toggleTheme = (): Theme => {
     const next: Theme = resolveTheme() === 'dark' ? 'light' : 'dark';
     setTheme(next);

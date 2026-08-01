@@ -44,15 +44,43 @@
     import { formatDateLong, formatHours, formatMinutes } from '../lib/time';
 
     onPageReady((signal) => {
-        const root = document.getElementById('summary-cards');
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Sección raíz de las tarjetas resumen`
+        const root = document.getElementById('summary-cards') as HTMLElement | null;
         if (!root) return;
 
-        const value = (key: string) =>
-            query<HTMLParagraphElement>(root, `[data-value="${key}"]`);
-        const hint = (key: string) =>
-            query<HTMLParagraphElement>(root, `[data-hint="${key}"]`);
+        // - `Mensaje de error de las tarjetas`
         const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
 
+        /**
+         * -----------------------------
+         * -----  `value(key)`  -----
+         * -----------------------------
+         * - Obtiene el valor visual de una tarjeta del resumen.
+         */
+        const value = (key: string): HTMLParagraphElement =>
+            query<HTMLParagraphElement>(root, `[data-value="${key}"]`);
+
+        /**
+         * ----------------------------
+         * -----  `hint(key)`  -----
+         * ----------------------------
+         * - Obtiene el texto auxiliar de una tarjeta del resumen.
+         */
+        const hint = (key: string): HTMLParagraphElement =>
+            query<HTMLParagraphElement>(root, `[data-hint="${key}"]`);
+
+        /**
+         * --------------------------
+         * -----  `load()`  -----
+         * --------------------------
+         * - Carga y pinta las métricas principales del dashboard.
+         */
         const load = async (): Promise<void> => {
             try {
                 const stats = await api.getStats();
@@ -73,7 +101,9 @@
                     `${stats.activeSubtasks} subtarea${stats.activeSubtasks === 1 ? '' : 's'}`;
 
                 showError(errorEl, null);
-            } catch (error) {
+            }
+            //  -----  si la carga falla, mostrar el error  -----
+            catch (error) {
                 showError(errorEl, (error as Error).message);
             }
         };

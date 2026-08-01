@@ -1,15 +1,8 @@
 /*
- *  ----------------------------------------------------------  *
- *  -----  draggable.ts  --  /client/src/lib/draggable.ts  -----  *
- *  ----------------------------------------------------------  *
- */
-
-/**
- * Arrastre libre de un elemento flotante (`position: fixed`).
- *
- * No usa el fantasma nativo de HTML DnD: mueve el propio nodo con
- * pointer events, así no deja rastro ni desplaza el resto del layout.
- */
+    *  --------------------------------------------------------------------------  *
+    *  -----  draggable.ts  --  /client/src/lib/draggable.ts  -----  *
+    *  --------------------------------------------------------------------------  *
+*/
 
 export interface DraggableOptions {
     /** Solo se inicia el drag desde este selector (p. ej. un asa). */
@@ -20,13 +13,28 @@ export interface DraggableOptions {
     signal?: AbortSignal;
 }
 
+/**
+ * ----------------------------------------
+ * -----  `clamp(value, min, max)`  -----
+ * ----------------------------------------
+ * - Limita un valor numérico dentro de un rango mínimo y máximo.
+ */
 const clamp = (value: number, min: number, max: number): number =>
     Math.min(Math.max(value, min), max);
 
+/**
+ * --------------------------------
+ * -----  `readSaved(key)`  -----
+ * --------------------------------
+ * - Recupera una posición guardada válida desde localStorage.
+ */
 const readSaved = (key: string): { x: number; y: number } | null => {
     try {
         const raw = localStorage.getItem(key);
-        if (!raw) return null;
+        if (!raw) {
+            return null;
+        }
+
         const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
         if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
             return { x: parsed.x, y: parsed.y };
@@ -37,7 +45,12 @@ const readSaved = (key: string): { x: number; y: number } | null => {
     return null;
 };
 
-/** Coloca `el` en coordenadas de viewport sin afectar el flujo del documento. */
+/**
+ * ----------------------------------------
+ * -----  `placeFixed(el, x, y)`  -----
+ * ----------------------------------------
+ * - Coloca un elemento fijo dentro de los límites visibles del viewport.
+ */
 export const placeFixed = (el: HTMLElement, x: number, y: number): void => {
     const maxX = Math.max(0, window.innerWidth - el.offsetWidth);
     const maxY = Math.max(0, window.innerHeight - el.offsetHeight);
@@ -52,8 +65,10 @@ export const placeFixed = (el: HTMLElement, x: number, y: number): void => {
 };
 
 /**
- * Ancla el panel flotante a la posición de un hueco del layout (p. ej. sidebar).
- * Si hay posición guardada, la restaura.
+ * ----------------------------------------------
+ * -----  `dockFixed(el, host, storageKey)`  -----
+ * ----------------------------------------------
+ * - Ancla un elemento flotante al host o restaura su posición guardada.
  */
 export const dockFixed = (
     el: HTMLElement,
@@ -72,8 +87,10 @@ export const dockFixed = (
 };
 
 /**
- * Hace arrastrable un elemento que ya es (o pasará a ser) `position: fixed`.
- * Devuelve una función para desactivar el arrastre (p. ej. al acoplar en móvil).
+ * ----------------------------------------------
+ * -----  `makeDraggable(el, options)`  -----
+ * ----------------------------------------------
+ * - Activa el arrastre libre de un elemento fijo y devuelve su limpieza.
  */
 export const makeDraggable = (
     el: HTMLElement,
@@ -86,10 +103,20 @@ export const makeDraggable = (
         ? el.querySelector<HTMLElement>(handle)
         : el;
 
+    /**
+     * ----------------------------
+     * -----  `cleanup()`  -----
+     * ----------------------------
+     * - Elimina los listeners locales y limpia el estado visual del arrastre.
+     */
     const cleanup = (): void => {
-        if (!local.signal.aborted) local.abort();
+        if (!local.signal.aborted) {
+            local.abort();
+        }
         el.classList.remove('is-draggable', 'is-dragging');
-        if (source) source.style.touchAction = '';
+        if (source) {
+            source.style.touchAction = '';
+        }
     };
 
     if (!source) {
@@ -97,7 +124,10 @@ export const makeDraggable = (
         return cleanup;
     }
 
-    if (signal?.aborted) return cleanup;
+    if (signal?.aborted) {
+        return cleanup;
+    }
+
     signal?.addEventListener('abort', cleanup, { once: true });
 
     el.classList.add('is-draggable');
@@ -108,13 +138,31 @@ export const makeDraggable = (
     let dragging = false;
     let pointerId: number | null = null;
 
+    /**
+     * --------------------------------------------
+     * -----  `onPointerMove(event)`  -----
+     * --------------------------------------------
+     * - Reubica el elemento mientras el puntero mantiene activo el arrastre.
+     */
     const onPointerMove = (event: PointerEvent): void => {
-        if (!dragging || event.pointerId !== pointerId) return;
+        if (!dragging || event.pointerId !== pointerId) {
+            return;
+        }
+
         placeFixed(el, event.clientX - offsetX, event.clientY - offsetY);
     };
 
+    /**
+     * --------------------------------------
+     * -----  `stopDrag(event)`  -----
+     * --------------------------------------
+     * - Finaliza el arrastre activo y persiste la posición si corresponde.
+     */
     const stopDrag = (event: PointerEvent): void => {
-        if (!dragging || event.pointerId !== pointerId) return;
+        if (!dragging || event.pointerId !== pointerId) {
+            return;
+        }
+
         dragging = false;
         pointerId = null;
         el.classList.remove('is-dragging');
@@ -136,11 +184,21 @@ export const makeDraggable = (
         }
     };
 
+    /**
+     * --------------------------------------------
+     * -----  `onPointerDown(event)`  -----
+     * --------------------------------------------
+     * - Inicia el arrastre cuando el usuario pulsa sobre una zona válida.
+     */
     const onPointerDown = (event: PointerEvent): void => {
-        if (event.button !== 0) return;
+        if (event.button !== 0) {
+            return;
+        }
 
         const target = event.target as HTMLElement | null;
-        if (target?.closest('button, a, input, select, textarea')) return;
+        if (target?.closest('button, a, input, select, textarea')) {
+            return;
+        }
 
         const rect = el.getBoundingClientRect();
         offsetX = event.clientX - rect.left;

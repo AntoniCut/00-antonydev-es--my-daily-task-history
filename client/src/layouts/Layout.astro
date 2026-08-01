@@ -50,48 +50,44 @@ const {
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="app-favicon" />
         
         <script is:inline>
-            
             (() => {
-                
-                /** - key: clave del localStorage */
+                /**
+                 * -----------------------------
+                 * -----  `bootTheme()`  -----
+                 * -----------------------------
+                 * - Resuelve el tema inicial y lo aplica antes del primer render.
+                 */
+
                 const key = 'theme';
-                
-                /** - stored: valor del localStorage */
                 const stored = localStorage.getItem(key);
-                
-                /** - theme: tema actual */
+
                 const theme =
-                    
                     stored === 'light' || stored === 'dark'
-                        
                         ? stored
-                        
-                        : window.matchMedia('(prefers-color-scheme: light)')
-                                .matches
+                        : window.matchMedia('(prefers-color-scheme: light)').matches
                           ? 'light'
                           : 'dark';
-                
-                
-                /** - document: establece el tema en el documento */
+
                 document.documentElement.setAttribute('data-theme', theme);
-                
-                /** - document: establece el color scheme en el documento */
                 document.documentElement.style.colorScheme = theme;
 
-                /** - favicon: icono invertido respecto al tema (claro↔oscuro) */
+                /*
+                    *  ---------------------------------  *
+                    *  -----  Referencias al HTML  -----  *
+                    *  ---------------------------------  *
+                */
+
+                // - `Enlace del favicon de la aplicación`
                 const favicon = document.getElementById('app-favicon');
-                
-                //  -----  si favicon es un elemento de tipo HTMLLinkElement,     -----
-                //  -----  se establece el href del favicon dependiendo del tema  -----
+
+                //  -----  si existe el favicon y es un link, sincronizarlo con el tema  -----
                 if (favicon instanceof HTMLLinkElement) {
                     favicon.href =
                         theme === 'dark'
                             ? '/favicon-light.svg'
                             : '/favicon-dark.svg';
                 }
-
             })();
-
         </script>
         
         <ClientRouter />
@@ -162,7 +158,6 @@ const {
 
 
 <script>
-    
     import {
         applyTheme,
         resolveTheme,
@@ -172,7 +167,7 @@ const {
 
 
     // ClientRouter reemplaza el documento: reaplicar el tema tras cada navegación.
-    
+
     /**
      * ---------------------------
      * -----  `syncTheme()`  -----
@@ -180,13 +175,11 @@ const {
      * - Aplica el tema actual al documento.
      * - Se ejecuta después de cada navegación.
      */
-    
-     const syncTheme = () => applyTheme(resolveTheme());
-    
+    const syncTheme = (): void => applyTheme(resolveTheme());
 
     //  -----  se ejecuta después de cada navegación  -----
     document.addEventListener('astro:after-swap', syncTheme);
-    
+
     //  -----  se ejecuta al cargar la página  -----
     syncTheme();
 
@@ -197,8 +190,7 @@ const {
      * --------------------------------------
      * - Obtiene el label del botón de cambio de tema.
      */
-    
-     const labelFor = (theme: Theme): string =>
+    const labelFor = (theme: Theme): string =>
         theme === 'dark' ? 'Modo oscuro' : 'Modo claro';
 
 
@@ -208,19 +200,22 @@ const {
      * ---------------------------
      * - Sincroniza el botón de cambio de tema con el tema actual.
      */
-    
     const syncToggle = (): void => {
-        
-        /** - theme: tema actual */
         const theme = resolveTheme();
-        
-        /** - button: botón de cambio de tema */
-        const button = document.getElementById('theme-toggle');
-        
 
-        //  -----  si button no es un elemento de tipo HTMLButtonElement, se retorna -----
-        if (!(button instanceof HTMLButtonElement)) 
-            return;
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Botón para alternar el tema`
+        const button = document.getElementById(
+            'theme-toggle',
+        ) as HTMLButtonElement | null;
+
+        //  -----  si el botón no existe, no sincronizar nada  -----
+        if (!button) return;
 
         //  -----  button: establece el aria-label y el title del botón de cambio de tema  -----
         button.setAttribute(
@@ -232,11 +227,15 @@ const {
         button.title =
             theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
 
-        /** - label: etiqueta del botón de cambio de tema */
-        const label = button.querySelector('[data-theme-label]');
-        
-        if (label) 
+        // - `Texto visible del botón de tema`
+        const label = button.querySelector(
+            '[data-theme-label]',
+        ) as HTMLSpanElement | null;
+
+        //  -----  si existe la etiqueta, actualizar su texto  -----
+        if (label) {
             label.textContent = labelFor(theme);
+        }
 
     };
 
@@ -247,32 +246,34 @@ const {
      * ---------------------------
      * - Vincula el evento click al botón de cambio de tema.
      */
-    
     const bindToggle = (): void => {
-        
-        /** - button: botón de cambio de tema */
-        const button = document.getElementById('theme-toggle');
-        
-        //  -----  si button no es un elemento de tipo HTMLButtonElement, se retorna -----
-        if (!(button instanceof HTMLButtonElement)) 
-            return;
-        
-        //  -----  si button ya está vinculado, se sincroniza el botón de cambio de tema -----
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Botón para alternar el tema`
+        const button = document.getElementById(
+            'theme-toggle',
+        ) as HTMLButtonElement | null;
+
+        //  -----  si el botón no existe, salir  -----
+        if (!button) return;
+
+        //  -----  si el botón ya está vinculado, solo resincronizar  -----
         if (button.dataset.bound === 'true') {
             syncToggle();
             return;
         }
 
-        //  -----  button: establece el dataset.bound en true -----
         button.dataset.bound = 'true';
 
-        //  -----  button: añade el evento click al botón de cambio de tema -----
         button.addEventListener('click', () => {
             toggleTheme();
             syncToggle();
         });
-        
-        //  -----  se sincroniza el botón de cambio de tema -----
+
         syncToggle();
     };
 
@@ -816,6 +817,48 @@ const {
         );
         border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
         color: var(--color-primary);
+    }
+
+    .app-confirm {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        background-color: var(--color-surface);
+        box-shadow: var(--shadow);
+        color: var(--color-text);
+        max-width: min(28rem, calc(100vw - 2rem));
+        padding: 0;
+        width: 100%;
+    }
+
+    .app-confirm::backdrop {
+        background-color: color-mix(in srgb, var(--color-bg) 55%, transparent);
+    }
+
+    .app-confirm-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        padding: 1.1rem 1.15rem 1rem;
+    }
+
+    .app-confirm-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .app-confirm-message {
+        color: var(--color-text-muted);
+        font-size: 0.92rem;
+        line-height: 1.45;
+        margin: 0;
+    }
+
+    .app-confirm-actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: flex-end;
+        margin-top: 0.25rem;
     }
 
     @media (max-width: 400px) {

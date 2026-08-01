@@ -1,14 +1,49 @@
 /*
-	*  -------------------------------------------------------------------------  *
-	*  -----  entries.routes.ts  --  /server/src/routes/entries.routes.ts  -----  *
-	*  -------------------------------------------------------------------------  *
+    *  -------------------------------------------------------------------------  *
+    *  -----  entries.routes.ts  --  /server/src/routes/entries.routes.ts  -----  *
+    *  -------------------------------------------------------------------------  *
 */
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { entriesController } from '../controllers/entries.controller.js';
 
 export const entriesRouter = Router();
 
-entriesRouter.get('/', (req, res) => entriesController.list(req, res));
-entriesRouter.post('/', (req, res) => entriesController.create(req, res));
-entriesRouter.put('/:id', (req, res) => entriesController.update(req, res));
-entriesRouter.delete('/:id', (req, res) => entriesController.delete(req, res));
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para listar registros de tiempo.
+ */
+entriesRouter.get('/', (req: Request, res: Response): Promise<void> =>
+    entriesController.list(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para crear un registro de tiempo.
+ */
+entriesRouter.post('/', (req: Request, res: Response): Promise<void> =>
+    entriesController.create(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para actualizar un registro de tiempo.
+ */
+entriesRouter.put('/:id', (req: Request, res: Response): Promise<void> =>
+    entriesController.update(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para eliminar un registro de tiempo.
+ */
+entriesRouter.delete('/:id', (req: Request, res: Response): Promise<void> =>
+    entriesController.delete(req, res),
+);

@@ -123,9 +123,8 @@ const { date } = Astro.props;
 
 
 <script>
-    
     import { api } from '../lib/api';
-    import { create, onPageReady, query, showError } from '../lib/dom';
+    import { create, onPageReady, query, showConfirm, showError } from '../lib/dom';
     import { emitDataChanged, onDataChanged } from '../lib/events';
     import {
         currentTime,
@@ -134,8 +133,14 @@ const { date } = Astro.props;
         formatWeekday,
         todayKey,
     } from '../lib/time';
-    import type { Task, TimeEntryView } from '../types/task';
+    import type { Task, TimeEntryView } from '../../types/types';
 
+    /**
+     * ---------------------------------
+     * -----  `dateFromUrl()`  -----
+     * ---------------------------------
+     * - Extrae la fecha actual desde la URL de la vista diaria.
+     */
     const dateFromUrl = (): string | null => {
         const match = window.location.pathname.match(
             /^\/dia\/(\d{4}-\d{2}-\d{2})\/?$/,
@@ -144,31 +149,71 @@ const { date } = Astro.props;
     };
 
     onPageReady((signal) => {
-        const root = document.getElementById('day-log');
+        /*
+            *  ---------------------------------  *
+            *  -----  Referencias al HTML  -----  *
+            *  ---------------------------------  *
+        */
+
+        // - `Panel raíz del registro diario`
+        const root = document.getElementById('day-log') as HTMLElement | null;
         if (!root) return;
 
+        // - `Título principal del día`
         const titleEl = query<HTMLHeadingElement>(root, '[data-title]');
+
+        // - `Subtítulo con la fecha larga`
         const subtitleEl = query<HTMLParagraphElement>(root, '[data-subtitle]');
+
+        // - `Indicador del total acumulado del día`
         const totalEl = query<HTMLSpanElement>(root, '[data-total]');
+
+        // - `Botón para abrir el formulario de registro`
         const toggleFormBtn = query<HTMLButtonElement>(
             root,
             '[data-toggle-form]',
         );
+
+        // - `Diálogo modal del formulario`
         const dialog = query<HTMLDialogElement>(root, '[data-dialog]');
+
+        // - `Formulario para crear un registro`
         const form = query<HTMLFormElement>(root, '[data-form]');
+
+        // - `Selector de tarea`
         const taskSelect = query<HTMLSelectElement>(root, '[data-task]');
+
+        // - `Selector de subtarea`
         const subtaskSelect = query<HTMLSelectElement>(root, '[data-subtask]');
+
+        // - `Campo de hora de inicio`
         const startInput = query<HTMLInputElement>(root, '[data-start]');
+
+        // - `Campo de hora de fin`
         const endInput = query<HTMLInputElement>(root, '[data-end]');
+
+        // - `Campo de nota o actividad`
         const noteInput = query<HTMLTextAreaElement>(root, '[data-note]');
+
+        // - `Botón de envío del formulario`
         const submitBtn = query<HTMLButtonElement>(root, '[data-submit]');
+
+        // - `Mensaje de error del listado`
         const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
+
+        // - `Mensaje de error del formulario`
         const formErrorEl = query<HTMLParagraphElement>(
             root,
             '[data-form-error]',
         );
+
+        // - `Mensaje cuando aún no existen tareas`
         const noTasksEl = query<HTMLParagraphElement>(root, '[data-no-tasks]');
+
+        // - `Listado de registros del día`
         const listEl = query<HTMLUListElement>(root, '[data-list]');
+
+        // - `Estado vacío del día`
         const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
 
         // Con persist el DOM no se regenera: la fecha nueva viene de la URL.
@@ -176,16 +221,34 @@ const { date } = Astro.props;
         root.dataset.date = currentDate;
         let tasks: Task[] = [];
 
+        /**
+         * ---------------------------------
+         * -----  `setDateLabel(date)`  -----
+         * ---------------------------------
+         * - Actualiza la cabecera textual con la fecha seleccionada.
+         */
         const setDateLabel = (date: string): void => {
             titleEl.textContent = `Tareas · ${formatWeekday(date)}`;
             subtitleEl.textContent = formatDateLong(date);
         };
 
+        /**
+         * -------------------------------
+         * -----  `closeForm()`  -----
+         * -------------------------------
+         * - Cierra el modal y limpia el error del formulario.
+         */
         const closeForm = (): void => {
             if (dialog.open) dialog.close();
             showError(formErrorEl, null);
         };
 
+        /**
+         * ------------------------------
+         * -----  `openForm()`  -----
+         * ------------------------------
+         * - Prepara y abre el modal para registrar una actividad.
+         */
         const openForm = (): void => {
             startInput.value = startInput.value || currentTime();
             showError(formErrorEl, null);
@@ -193,18 +256,21 @@ const { date } = Astro.props;
             taskSelect.focus();
         };
 
+        /**
+         * ----------------------------------
+         * -----  `fillSubtasks()`  -----
+         * ----------------------------------
+         * - Rellena el selector de subtareas según la tarea elegida.
+         */
         const fillSubtasks = (): void => {
             const task = tasks.find((item) => item.id === taskSelect.value);
-            subtaskSelect.innerHTML = '';
-            subtaskSelect.appendChild(
+            subtaskSelect.replaceChildren(
                 create('option', {
                     text: 'Sin subtarea (directo a la tarea)',
                     attrs: { value: '' },
                 }),
             );
-            for (const subtask of task?.subtasks.filter(
-                (item) => item.active,
-            ) ?? []) {
+            for (const subtask of task?.subtasks.filter((item) => item.active) ?? []) {
                 subtaskSelect.appendChild(
                     create('option', {
                         text: subtask.title,
@@ -214,11 +280,17 @@ const { date } = Astro.props;
             }
         };
 
+        /**
+         * -------------------------------
+         * -----  `fillTasks()`  -----
+         * -------------------------------
+         * - Carga las tareas activas y sincroniza el estado del formulario.
+         */
         const fillTasks = async (): Promise<void> => {
             const previous = taskSelect.value;
             tasks = (await api.getTasks()).filter((task) => task.active);
 
-            taskSelect.innerHTML = '';
+            taskSelect.replaceChildren();
             for (const task of tasks) {
                 taskSelect.appendChild(
                     create('option', {
@@ -235,7 +307,10 @@ const { date } = Astro.props;
             const hasTasks = tasks.length > 0;
             noTasksEl.hidden = hasTasks;
             toggleFormBtn.disabled = !hasTasks;
+
+            //  -----  si no hay tareas activas, cerrar el formulario  -----
             if (!hasTasks) closeForm();
+
             for (const control of [
                 taskSelect,
                 subtaskSelect,
@@ -248,7 +323,12 @@ const { date } = Astro.props;
             }
         };
 
-        /** Niveles de sangría a partir de espacios/tabs al inicio de cada línea. */
+        /**
+         * -----------------------------------
+         * -----  `indentLevel(leading)`  -----
+         * -----------------------------------
+         * - Calcula el nivel de sangría según espacios y tabulaciones.
+         */
         const indentLevel = (leading: string): number => {
             let level = 0;
             for (const char of leading) {
@@ -258,10 +338,10 @@ const { date } = Astro.props;
         };
 
         /**
-         * Convierte la actividad en una lista jerárquica.
-         * - Líneas sin guion se muestran como viñetas de nivel base.
-         * - Si la primera línea no era viñeta, las que sí lo son bajan un nivel
-         *   (p. ej. "Prensa…\n- Maquinista" → - Prensa / ·· - Maquinista).
+         * ----------------------------------------
+         * -----  `renderNoteOutline(note)`  -----
+         * ----------------------------------------
+         * - Convierte la actividad escrita en una lista jerárquica visual.
          */
         const renderNoteOutline = (note: string): HTMLUListElement | null => {
             const parsed = note
@@ -284,6 +364,7 @@ const { date } = Astro.props;
                     Boolean(line?.content),
                 );
 
+            //  -----  si no hay líneas útiles, no renderizar la lista  -----
             if (parsed.length === 0) return null;
 
             const firstIsPlain = !parsed[0].hadBullet;
@@ -291,7 +372,10 @@ const { date } = Astro.props;
 
             for (const line of parsed) {
                 let level = line.level;
+
+                //  -----  si la primera línea es plana, desplazar las viñetas hijas  -----
                 if (line.hadBullet && firstIsPlain) level += 1;
+
                 const item = create('li', {
                     className: 'outline-line',
                     text: line.content,
@@ -303,6 +387,12 @@ const { date } = Astro.props;
             return list;
         };
 
+        /**
+         * -----------------------------------
+         * -----  `renderEntry(entry)`  -----
+         * -----------------------------------
+         * - Crea el bloque visual de un registro de tiempo.
+         */
         const renderEntry = (entry: TimeEntryView): HTMLElement => {
             const block = create('article', { className: 'entry-block' });
             const crossesMidnight = entry.end <= entry.start;
@@ -322,6 +412,8 @@ const { date } = Astro.props;
             );
 
             const outline = create('div', { className: 'entry-outline' });
+
+            //  -----  si el registro pertenece a una subtarea, mostrar su nombre  -----
             if (entry.subtaskTitle) {
                 outline.appendChild(
                     create('div', {
@@ -331,6 +423,7 @@ const { date } = Astro.props;
                 );
             }
 
+            //  -----  si hay nota, pintarla como esquema jerárquico  -----
             if (entry.note) {
                 const noteList = renderNoteOutline(entry.note);
                 if (noteList) outline.appendChild(noteList);
@@ -360,12 +453,21 @@ const { date } = Astro.props;
             deleteBtn.addEventListener(
                 'click',
                 () => {
-                    if (!confirm('¿Eliminar este registro de tiempo?')) return;
-                    api.deleteEntry(entry.id)
-                        .then(emitDataChanged)
-                        .catch((error: Error) =>
-                            showError(errorEl, error.message),
-                        );
+                    void showConfirm({
+                        title: 'Eliminar registro',
+                        message: '¿Eliminar este registro de tiempo?',
+                        confirmText: 'Eliminar',
+                        danger: true,
+                    }).then((confirmed) => {
+                        //  -----  si se cancela la confirmación, no borrar el registro  -----
+                        if (!confirmed) return;
+
+                        api.deleteEntry(entry.id)
+                            .then(emitDataChanged)
+                            .catch((error: Error) =>
+                                showError(errorEl, error.message),
+                            );
+                    });
                 },
                 { signal },
             );
@@ -374,7 +476,12 @@ const { date } = Astro.props;
             return block;
         };
 
-        /** Agrupa por tarea; el orden de grupos sigue el primer registro de cada una. */
+        /**
+         * ----------------------------------
+         * -----  `renderDay(entries)`  -----
+         * ----------------------------------
+         * - Agrupa y pinta los registros del día por tarea.
+         */
         const renderDay = (entries: TimeEntryView[]): DocumentFragment => {
             const fragment = document.createDocumentFragment();
             const groups = new Map<
@@ -388,9 +495,13 @@ const { date } = Astro.props;
 
             for (const entry of entries) {
                 const existing = groups.get(entry.taskId);
+
+                //  -----  si la tarea ya tiene grupo, añadir el registro  -----
                 if (existing) {
                     existing.entries.push(entry);
-                } else {
+                }
+                //  -----  si la tarea aún no tiene grupo, crearlo  -----
+                else {
                     groups.set(entry.taskId, {
                         taskTitle: entry.taskTitle,
                         taskColor: entry.taskColor,
@@ -420,6 +531,12 @@ const { date } = Astro.props;
             return fragment;
         };
 
+        /**
+         * --------------------------------------
+         * -----  `buildEditForm(entry)`  -----
+         * --------------------------------------
+         * - Construye el formulario inline para editar un registro.
+         */
         const buildEditForm = (entry: TimeEntryView): HTMLFormElement => {
             const editForm = create('form', { className: 'entry-edit' });
             const start = create('input', {
@@ -454,7 +571,7 @@ const { date } = Astro.props;
             cancel.addEventListener('click', () => void loadEntries(), {
                 signal,
             });
-            editForm.addEventListener('submit', (event) => {
+            editForm.addEventListener('submit', (event: SubmitEvent) => {
                 event.preventDefault();
                 api.updateEntry(entry.id, {
                     start: start.value,
@@ -468,6 +585,12 @@ const { date } = Astro.props;
             return editForm;
         };
 
+        /**
+         * --------------------------------
+         * -----  `loadEntries()`  -----
+         * --------------------------------
+         * - Carga y pinta los registros de la fecha actual.
+         */
         const loadEntries = async (): Promise<void> => {
             try {
                 const entries = await api.getEntries({ date: currentDate });
@@ -478,13 +601,14 @@ const { date } = Astro.props;
                     entries.reduce((total, entry) => total + entry.minutes, 0),
                 );
                 showError(errorEl, null);
-            } catch (error) {
+            }
+            //  -----  si la carga falla, mostrar el error  -----
+            catch (error) {
                 showError(errorEl, (error as Error).message);
             }
         };
 
         taskSelect.addEventListener('change', fillSubtasks, { signal });
-
         toggleFormBtn.addEventListener('click', () => openForm(), { signal });
 
         for (const cancelBtn of root.querySelectorAll('[data-cancel-form]')) {
@@ -502,7 +626,7 @@ const { date } = Astro.props;
 
         dialog.addEventListener(
             'click',
-            (event) => {
+            (event: MouseEvent) => {
                 if (event.target === dialog) closeForm();
             },
             { signal },
@@ -511,6 +635,7 @@ const { date } = Astro.props;
         emptyEl.addEventListener(
             'click',
             () => {
+                //  -----  si el botón está disponible, abrir el formulario  -----
                 if (!toggleFormBtn.disabled) openForm();
             },
             { signal },
@@ -518,7 +643,7 @@ const { date } = Astro.props;
 
         form.addEventListener(
             'submit',
-            (event) => {
+            (event: SubmitEvent) => {
                 event.preventDefault();
                 api.createEntry({
                     taskId: taskSelect.value,
@@ -559,7 +684,6 @@ const { date } = Astro.props;
             .then(() => loadEntries())
             .catch((error: Error) => showError(errorEl, error.message));
     });
-
 </script>
 
 

@@ -1,25 +1,91 @@
 /*
-	*  ---------------------------------------------------------------------  *
-	*  -----  tasks.routes.ts  --  /server/src/routes/tasks.routes.ts  -----  *
-	*  ---------------------------------------------------------------------  *
+    *  ---------------------------------------------------------------------  *
+    *  -----  tasks.routes.ts  --  /server/src/routes/tasks.routes.ts  -----  *
+    *  ---------------------------------------------------------------------  *
 */
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { tasksController } from '../controllers/tasks.controller.js';
 
 export const tasksRouter = Router();
 
-tasksRouter.get('/', (req, res) => tasksController.getAll(req, res));
-tasksRouter.get('/:id', (req, res) => tasksController.getById(req, res));
-tasksRouter.post('/', (req, res) => tasksController.create(req, res));
-tasksRouter.put('/:id', (req, res) => tasksController.update(req, res));
-tasksRouter.delete('/:id', (req, res) => tasksController.delete(req, res));
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para listar tareas.
+ */
+tasksRouter.get('/', (req: Request, res: Response): Promise<void> =>
+    tasksController.getAll(req, res),
+);
 
-tasksRouter.post('/:taskId/subtasks', (req, res) =>
-  tasksController.addSubtask(req, res),
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para consultar una tarea por id.
+ */
+tasksRouter.get('/:id', (req: Request, res: Response): Promise<void> =>
+    tasksController.getById(req, res),
 );
-tasksRouter.put('/:taskId/subtasks/:subtaskId', (req, res) =>
-  tasksController.updateSubtask(req, res),
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para crear una tarea.
+ */
+tasksRouter.post('/', (req: Request, res: Response): Promise<void> =>
+    tasksController.create(req, res),
 );
-tasksRouter.delete('/:taskId/subtasks/:subtaskId', (req, res) =>
-  tasksController.deleteSubtask(req, res),
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para actualizar una tarea.
+ */
+tasksRouter.put('/:id', (req: Request, res: Response): Promise<void> =>
+    tasksController.update(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para eliminar una tarea.
+ */
+tasksRouter.delete('/:id', (req: Request, res: Response): Promise<void> =>
+    tasksController.delete(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para crear una subtarea.
+ */
+tasksRouter.post('/:taskId/subtasks', (req: Request, res: Response): Promise<void> =>
+    tasksController.addSubtask(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para actualizar una subtarea.
+ */
+tasksRouter.put(
+    '/:taskId/subtasks/:subtaskId',
+    (req: Request, res: Response): Promise<void> => tasksController.updateSubtask(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
+ * - Atiende la ruta para eliminar una subtarea.
+ */
+tasksRouter.delete(
+    '/:taskId/subtasks/:subtaskId',
+    (req: Request, res: Response): Promise<void> => tasksController.deleteSubtask(req, res),
 );
