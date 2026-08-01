@@ -19,7 +19,7 @@ export const toEntryView = (
   ...entry,
   taskId: task.id,
   taskTitle: task.title,
-  taskColor: task.color,
+  taskColor: subtask?.color ?? task.color,
   subtaskId: subtask?.id,
   subtaskTitle: subtask?.title,
 });

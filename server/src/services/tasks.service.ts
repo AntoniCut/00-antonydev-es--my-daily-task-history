@@ -29,6 +29,19 @@ const requireTitle = (value: unknown, label = 'El título'): string => {
 const optionalText = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
+const resolveColor = (value: unknown, fallback: string): string =>
+  isHexColor(value) ? value : fallback;
+
+const normalizeSubtask = (subtask: Subtask, task: Task): Subtask => ({
+  ...subtask,
+  color: resolveColor(subtask.color, task.color),
+});
+
+const normalizeTask = (task: Task): Task => ({
+  ...task,
+  subtasks: task.subtasks.map((subtask) => normalizeSubtask(subtask, task)),
+});
+
 const byCreatedAt = (a: { createdAt: string }, b: { createdAt: string }): number =>
   a.createdAt.localeCompare(b.createdAt);
 
@@ -63,13 +76,15 @@ export class TasksService {
   async getAll(includeInactive = true): Promise<Task[]> {
     const tasks = await jsonStorage.readAll();
     return tasks
+      .map(normalizeTask)
       .filter((task) => includeInactive || task.active)
       .sort((a, b) => Number(b.active) - Number(a.active) || byCreatedAt(a, b));
   }
 
   async getById(id: string): Promise<Task | undefined> {
     const tasks = await jsonStorage.readAll();
-    return tasks.find((task) => task.id === id);
+    const task = tasks.find((item) => item.id === id);
+    return task ? normalizeTask(task) : undefined;
   }
 
   async create(dto: CreateTaskDto): Promise<Task> {
@@ -78,18 +93,23 @@ export class TasksService {
     assertUniqueActiveTitle(tasks, title);
     const now = new Date().toISOString();
 
-    const subtaskTitles = Array.isArray(dto.subtasks) ? dto.subtasks : [];
-    const subtasks = subtaskTitles
-      .filter((subtaskTitle) => optionalText(subtaskTitle))
-      .map((subtaskTitle) =>
-        this.buildSubtask(requireTitle(subtaskTitle, 'El título de la subtarea'), now),
+    const taskColor = isHexColor(dto.color) ? dto.color : nextColor(tasks.length);
+
+    const subtaskDrafts = Array.isArray(dto.subtasks) ? dto.subtasks : [];
+    const subtasks = subtaskDrafts
+      .map((draft) => ({
+        title: requireTitle(draft?.title, 'El título de la subtarea'),
+        color: draft?.color,
+      }))
+      .map((draft, index) =>
+        this.buildSubtask(draft.title, now, resolveColor(draft.color, taskColor)),
       );
 
     const task: Task = {
       id: randomUUID(),
       title,
       description: optionalText(dto.description),
-      color: isHexColor(dto.color) ? dto.color : nextColor(tasks.length),
+      color: taskColor,
       completed: false,
       active: true,
       subtasks,
@@ -148,7 +168,11 @@ export class TasksService {
     if (!task) return undefined;
 
     const now = new Date().toISOString();
-    const subtask = this.buildSubtask(title, now);
+    const subtask = this.buildSubtask(
+      title,
+      now,
+      resolveColor(dto.color, task.color),
+    );
     task.subtasks.push(subtask);
     task.updatedAt = now;
 
@@ -168,6 +192,12 @@ export class TasksService {
 
     if (dto.title !== undefined) {
       subtask.title = requireTitle(dto.title, 'El título de la subtarea');
+    }
+    if (dto.color !== undefined) {
+      if (!isHexColor(dto.color)) {
+        throw new Error('El color debe ser un hexadecimal tipo #5b8def');
+      }
+      subtask.color = dto.color;
     }
     if (dto.completed !== undefined) subtask.completed = Boolean(dto.completed);
     if (dto.active !== undefined) subtask.active = Boolean(dto.active);
@@ -194,10 +224,11 @@ export class TasksService {
     return true;
   }
 
-  private buildSubtask(title: string, now: string): Subtask {
+  private buildSubtask(title: string, now: string, color: string): Subtask {
     return {
       id: randomUUID(),
       title,
+      color,
       completed: false,
       active: true,
       entries: [],

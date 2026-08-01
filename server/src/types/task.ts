@@ -23,6 +23,7 @@ export interface TimeEntry {
 export interface Subtask {
   id: string;
   title: string;
+  color: string;
   completed: boolean;
   /** `false` = subtarea dada de baja (se conserva con su histórico) */
   active: boolean;
@@ -47,12 +48,17 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface SubtaskDraft {
+  title: string;
+  color?: string;
+}
+
 export interface CreateTaskDto {
   title: string;
   description?: string;
   color?: string;
-  /** Títulos de las subtareas creadas junto con la tarea */
-  subtasks?: string[];
+  /** Subtareas creadas junto con la tarea */
+  subtasks?: SubtaskDraft[];
 }
 
 export interface UpdateTaskDto {
@@ -65,10 +71,12 @@ export interface UpdateTaskDto {
 
 export interface CreateSubtaskDto {
   title: string;
+  color?: string;
 }
 
 export interface UpdateSubtaskDto {
   title?: string;
+  color?: string;
   completed?: boolean;
   active?: boolean;
 }

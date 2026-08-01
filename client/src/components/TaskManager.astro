@@ -37,6 +37,11 @@
                 placeholder="Opcional"></textarea>
         </div>
 
+        <div class="field field-color">
+            <label for="new-color">Color</label>
+            <input id="new-color" type="color" data-color aria-label="Color de la tarea" />
+        </div>
+
         <div class="field">
             <label>Subtareas</label>
             <div class="subtask-inputs" data-subtask-inputs></div>
@@ -80,10 +85,11 @@
 
 <script>
     import { api } from '../lib/api';
+    import { nextColor, resolveSubtaskColor } from '../lib/colors';
     import { create, onPageReady, query, showError } from '../lib/dom';
     import { emitDataChanged, onDataChanged } from '../lib/events';
     import { formatMinutes } from '../lib/time';
-    import type { Subtask, Task, TimeEntry } from '../types/task';
+    import type { Subtask, SubtaskDraft, Task, TimeEntry } from '../types/task';
 
     onPageReady((signal) => {
         const root = document.getElementById('task-manager');
@@ -95,6 +101,7 @@
             root,
             '[data-description]',
         );
+        const colorInput = query<HTMLInputElement>(root, '[data-color]');
         const subtaskInputs = query<HTMLDivElement>(
             root,
             '[data-subtask-inputs]',
@@ -158,6 +165,16 @@
                 attrs: { value, ...attrs },
             });
 
+        const inlineColor = (value: string, label: string): HTMLInputElement =>
+            create('input', {
+                className: 'inline-color',
+                attrs: {
+                    type: 'color',
+                    value,
+                    'aria-label': label,
+                },
+            });
+
         const inlineActions = (submitText: string): HTMLDivElement => {
             const actions = create('div', { className: 'inline-actions' });
             actions.append(
@@ -202,8 +219,6 @@
         };
 
         const buildTaskEditForm = (task: Task): HTMLFormElement => {
-            
-                        
             const title = inlineInput(task.title, {
                 type: 'text',
                 maxlength: '120',
@@ -216,14 +231,7 @@
                 placeholder: 'Descripción',
                 'aria-label': 'Descripción',
             });
-            const color = create('input', {
-                className: 'inline-color',
-                attrs: {
-                    type: 'color',
-                    value: task.color,
-                    'aria-label': 'Color de la tarea',
-                },
-            });
+            const color = inlineColor(task.color, 'Color de la tarea');
 
             return inlineForm(
                 [title, description, color, inlineActions('Guardar')],
@@ -246,9 +254,16 @@
                 required: 'true',
                 'aria-label': 'Título de la subtarea',
             });
+            const color = inlineColor(
+                resolveSubtaskColor(subtask, task),
+                'Color de la subtarea',
+            );
 
-            return inlineForm([title, inlineActions('Guardar')], () =>
-                api.updateSubtask(task.id, subtask.id, { title: title.value }),
+            return inlineForm([title, color, inlineActions('Guardar')], () =>
+                api.updateSubtask(task.id, subtask.id, {
+                    title: title.value,
+                    color: color.value,
+                }),
             );
         };
 
@@ -260,9 +275,13 @@
                 placeholder: 'Nueva subtarea',
                 'aria-label': 'Título de la nueva subtarea',
             });
+            const color = inlineColor(task.color, 'Color de la subtarea');
 
-            return inlineForm([title, inlineActions('Añadir')], () =>
-                api.createSubtask(task.id, { title: title.value }),
+            return inlineForm([title, color, inlineActions('Añadir')], () =>
+                api.createSubtask(task.id, {
+                    title: title.value,
+                    color: color.value,
+                }),
             );
         };
 
@@ -297,6 +316,9 @@
             if (subtask.completed) item.classList.add('is-completed');
 
             const row = create('div', { className: 'row' });
+
+            const color = create('span', { className: 'subtask-color' });
+            color.style.backgroundColor = resolveSubtaskColor(subtask, task);
 
             const checkbox = create('input', {
                 className: 'row-check',
@@ -360,7 +382,7 @@
                 }),
             );
 
-            row.append(checkbox, name, badges, actions);
+            row.append(color, checkbox, name, badges, actions);
             item.append(row, panelHost);
             return item;
         };
@@ -487,6 +509,7 @@
         const load = async (): Promise<void> => {
             try {
                 tasks = await api.getTasks();
+                setDefaultTaskColor();
                 render();
                 showError(treeErrorEl, null);
             } catch (error) {
@@ -495,6 +518,10 @@
         };
 
         /* ------------------  Alta de tareas con subtareas  -------------- */
+
+        const setDefaultTaskColor = (): void => {
+            colorInput.value = nextColor(tasks.length);
+        };
 
         const addSubtaskInput = (): void => {
             const row = create('div', { className: 'subtask-input-row' });
@@ -506,6 +533,14 @@
                     'aria-label': 'Título de la subtarea',
                 },
             });
+            const color = create('input', {
+                className: 'subtask-color-input',
+                attrs: {
+                    type: 'color',
+                    value: colorInput.value,
+                    'aria-label': 'Color de la subtarea',
+                },
+            });
             const remove = create('button', {
                 className: 'icon-btn',
                 text: '✕',
@@ -514,13 +549,14 @@
             });
             remove.addEventListener('click', () => row.remove(), { signal });
 
-            row.append(input, remove);
+            row.append(input, color, remove);
             subtaskInputs.appendChild(row);
             input.focus();
         };
 
         const resetNewForm = (): void => {
             newForm.reset();
+            setDefaultTaskColor();
             subtaskInputs.replaceChildren();
             addSubtaskInput();
             showError(newErrorEl, null);
@@ -533,16 +569,30 @@
             (event) => {
                 event.preventDefault();
                 const subtasks = [
-                    ...subtaskInputs.querySelectorAll<HTMLInputElement>(
-                        'input',
+                    ...subtaskInputs.querySelectorAll<HTMLDivElement>(
+                        '.subtask-input-row',
                     ),
                 ]
-                    .map((input) => input.value.trim())
-                    .filter(Boolean);
+                    .map((row) => {
+                        const title =
+                            row.querySelector<HTMLInputElement>(
+                                'input[type="text"]',
+                            )?.value.trim() ?? '';
+                        if (!title) return null;
+
+                        const color =
+                            row.querySelector<HTMLInputElement>(
+                                'input[type="color"]',
+                            )?.value;
+
+                        return color ? { title, color } : { title };
+                    })
+                    .filter((subtask): subtask is SubtaskDraft => subtask !== null);
 
                 api.createTask({
                     title: titleInput.value,
                     description: descInput.value,
+                    color: colorInput.value,
                     subtasks,
                 })
                     .then(() => {
@@ -559,6 +609,7 @@
         showInactiveInput.addEventListener('change', render, { signal });
         onDataChanged(() => void load(), { signal });
 
+        colorInput.value = nextColor(0);
         addSubtaskInput();
         void load();
     });
@@ -603,6 +654,13 @@
         padding-right: 0.15rem;
     }
 
+    .field-color input[type='color'] {
+        width: 3rem;
+        height: 2.35rem;
+        padding: 2px;
+        cursor: pointer;
+    }
+
     .subtask-inputs {
         display: flex;
         flex-direction: column;
@@ -626,6 +684,17 @@
         font-size: 0.9rem;
         flex: 1;
         min-width: 0;
+    }
+
+    .subtask-inputs :global(.subtask-color-input) {
+        background: none;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        width: 2.35rem;
+        height: 2.35rem;
+        padding: 2px;
+        flex-shrink: 0;
+        cursor: pointer;
     }
 
     .subtask-inputs :global(input:focus) {
@@ -689,6 +758,13 @@
         width: 8px;
         height: 30px;
         border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .task-list :global(.subtask-color) {
+        width: 6px;
+        height: 22px;
+        border-radius: 3px;
         flex-shrink: 0;
     }
 

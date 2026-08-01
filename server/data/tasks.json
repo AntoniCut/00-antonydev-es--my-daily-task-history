@@ -228,6 +228,29 @@
       "entries": [],
       "createdAt": "2026-07-30T20:32:25.241Z",
       "updatedAt": "2026-07-30T20:37:43.469Z"
+    },
+    {
+      "id": "4b0a5e2d-8535-4efc-b2d6-22e51aff0c11",
+      "title": "COCINA",
+      "description": "tareas de cocina",
+      "color": "#97d3bc",
+      "completed": false,
+      "active": true,
+      "subtasks": [
+        {
+          "id": "0d6dab04-6039-4ce3-adab-bbefb5f67341",
+          "title": "cocina de casa",
+          "color": "#61b9ef",
+          "completed": false,
+          "active": true,
+          "entries": [],
+          "createdAt": "2026-08-01T19:35:11.035Z",
+          "updatedAt": "2026-08-01T19:35:11.035Z"
+        }
+      ],
+      "entries": [],
+      "createdAt": "2026-08-01T19:35:11.035Z",
+      "updatedAt": "2026-08-01T19:35:11.035Z"
     }
   ]
 }
