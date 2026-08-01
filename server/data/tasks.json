@@ -74,6 +74,16 @@
               "note": "Prensa 1800 T:\n- Maquinista.",
               "createdAt": "2026-07-29T23:21:39.267Z",
               "updatedAt": "2026-07-29T23:21:39.267Z"
+            },
+            {
+              "id": "d2c9093e-9b54-4a35-8622-a04232d3a07c",
+              "date": "2026-07-31",
+              "start": "06:00",
+              "end": "14:00",
+              "minutes": 480,
+              "note": "Mantenimiento",
+              "createdAt": "2026-08-01T20:20:35.101Z",
+              "updatedAt": "2026-08-01T20:20:35.101Z"
             }
           ],
           "createdAt": "2026-07-28T16:50:24.366Z",
@@ -84,7 +94,18 @@
           "title": "Extrucolor - Turno Tarde",
           "completed": false,
           "active": true,
-          "entries": [],
+          "entries": [
+            {
+              "id": "5f1b1b6d-2e0b-4b4c-82dd-a862f5b33c70",
+              "date": "2026-07-29",
+              "start": "14:00",
+              "end": "22:00",
+              "minutes": 480,
+              "note": "Fabricar",
+              "createdAt": "2026-08-01T20:21:31.128Z",
+              "updatedAt": "2026-08-01T20:21:31.128Z"
+            }
+          ],
           "createdAt": "2026-07-28T16:50:24.366Z",
           "updatedAt": "2026-07-28T16:50:24.366Z"
         },
@@ -100,7 +121,7 @@
       ],
       "entries": [],
       "createdAt": "2026-07-28T16:50:24.366Z",
-      "updatedAt": "2026-07-29T23:21:39.267Z"
+      "updatedAt": "2026-08-01T20:21:31.128Z"
     },
     {
       "id": "b9d536c2-8084-481c-9e8c-474b0fb8b562",
