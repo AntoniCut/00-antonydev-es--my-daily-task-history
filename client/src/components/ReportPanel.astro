@@ -176,18 +176,18 @@
 
         /**
          * ----------------------------------------
-         * -----  `bar(minutes, max, color)`  -----
+         * -----  `bar(minutes, total, color)`  -----
          * ----------------------------------------
-         * - Crea la barra visual proporcional de una fila del informe.
+         * - Crea la barra visual: el 100% del track es el total del periodo.
          */
         const bar = (
             minutes: number,
-            max: number,
+            total: number,
             color: string,
         ): HTMLElement => {
             const track = create('span', { className: 'bar-track' });
             const fill = create('span', { className: 'bar-fill' });
-            fill.style.width = `${max ? Math.max((minutes / max) * 100, 2) : 0}%`;
+            fill.style.width = `${total ? Math.max((minutes / total) * 100, 2) : 0}%`;
             fill.style.backgroundColor = color;
             track.appendChild(fill);
             return track;
@@ -201,10 +201,7 @@
          */
         const renderReport = (report: ReportSummary): void => {
             const tasks = report.tasks.filter((task) => task.minutes > 0);
-            const max = tasks.reduce(
-                (top, task) => Math.max(top, task.minutes),
-                0,
-            );
+            const totalMinutes = report.totalMinutes;
 
             totalEl.textContent = `${formatMinutes(report.totalMinutes)} · ${formatHours(report.totalMinutes)} h`;
             entriesEl.textContent = `${tasks.reduce((count, task) => count + task.entries, 0)} registros`;
@@ -214,12 +211,14 @@
                     const item = create('li', { className: 'report-item' });
 
                     const row = create('div', { className: 'report-row' });
-                    row.append(
+                    const rowHeader = create('div', {
+                        className: 'report-row-header',
+                    });
+                    rowHeader.append(
                         create('span', {
                             className: 'report-title',
                             text: task.title,
                         }),
-                        bar(task.minutes, max, task.color),
                         create('span', {
                             className: 'report-time',
                             text: formatMinutes(task.minutes),
@@ -230,6 +229,10 @@
                                 ? `${Math.round((task.minutes / report.totalMinutes) * 100)}%`
                                 : '0%',
                         }),
+                    );
+                    row.append(
+                        rowHeader,
+                        bar(task.minutes, totalMinutes, task.color),
                     );
                     item.appendChild(row);
 
@@ -256,16 +259,22 @@
                             const subItem = create('li', {
                                 className: 'report-subitem',
                             });
-                            subItem.append(
+                            const subHeader = create('div', {
+                                className: 'report-row-header',
+                            });
+                            subHeader.append(
                                 create('span', {
                                     className: 'report-title',
                                     text: child.title,
                                 }),
-                                bar(child.minutes, max, task.color),
                                 create('span', {
                                     className: 'report-time',
                                     text: formatMinutes(child.minutes),
                                 }),
+                            );
+                            subItem.append(
+                                subHeader,
+                                bar(child.minutes, totalMinutes, task.color),
                             );
                             sublist.appendChild(subItem);
                         }
@@ -544,7 +553,19 @@
     }
 
     .report-list :global(.report-row),
-    .report-list :global(.report-subitem),
+    .report-list :global(.report-subitem) {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .report-list :global(.report-row-header) {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
     .day-list :global(.day-item) {
         display: flex;
         align-items: center;
@@ -564,8 +585,8 @@
     .report-list :global(.report-title) {
         font-weight: 600;
         font-size: 0.9rem;
-        width: 170px;
-        flex-shrink: 0;
+        flex: 1;
+        min-width: 0;
         overflow-wrap: anywhere;
     }
 
@@ -583,11 +604,18 @@
 
     .report-list :global(.bar-track),
     .day-list :global(.bar-track) {
-        flex: 1;
         height: 8px;
         background-color: var(--color-surface-hover);
         border-radius: 999px;
         overflow: hidden;
+    }
+
+    .report-list :global(.bar-track) {
+        width: 100%;
+    }
+
+    .day-list :global(.bar-track) {
+        flex: 1;
         min-width: 40px;
     }
 
@@ -602,7 +630,6 @@
     .day-list :global(.report-time) {
         font-variant-numeric: tabular-nums;
         font-size: 0.85rem;
-        width: 70px;
         text-align: right;
         flex-shrink: 0;
     }
@@ -610,49 +637,13 @@
     .report-list :global(.report-share) {
         color: var(--color-text-muted);
         font-size: 0.8rem;
-        width: 42px;
         text-align: right;
         flex-shrink: 0;
     }
 
-    @media (max-width: 700px) {
-        .report-list :global(.report-title) {
-            width: 110px;
-        }
-    }
-
-    /* Con anchos fijos (título + barra + tiempo + %) la fila no cabe por
-       debajo de ~560px: el título pasa a su propia línea. */
     @media (max-width: 560px) {
         .report-controls .field {
             min-width: min(150px, 100%);
-        }
-
-        .report-list :global(.report-row),
-        .report-list :global(.report-subitem) {
-            flex-wrap: wrap;
-            gap: 0.3rem 0.5rem;
-        }
-
-        .report-list :global(.report-title) {
-            width: 100%;
-            flex: 0 0 100%;
-        }
-
-        .report-list :global(.report-time),
-        .day-list :global(.report-time) {
-            width: auto;
-            min-width: 3.4rem;
-        }
-
-        .report-list :global(.report-share) {
-            width: auto;
-            min-width: 2rem;
-        }
-
-        .report-list :global(.bar-track),
-        .day-list :global(.bar-track) {
-            min-width: 2rem;
         }
 
         .report-list :global(.report-sublist) {
@@ -668,6 +659,15 @@
             width: auto;
             flex: 0 0 4.6rem;
             font-size: 0.78rem;
+        }
+
+        .day-list :global(.report-time) {
+            width: auto;
+            min-width: 3.4rem;
+        }
+
+        .day-list :global(.bar-track) {
+            min-width: 2rem;
         }
     }
 
