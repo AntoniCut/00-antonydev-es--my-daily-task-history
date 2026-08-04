@@ -10,7 +10,7 @@ import type {
     CreateTaskDto,
     UpdateSubtaskDto,
     UpdateTaskDto,
-} from '../../types/types.js';
+} from '../types/types.js';
 
 const NOT_FOUND_TASK = 'Tarea no encontrada';
 const NOT_FOUND_SUBTASK = 'Subtarea no encontrada';

@@ -3,7 +3,7 @@
     *  -----  entries.ts  --  /server/src/utils/entries.ts  -----  *
     *  ----------------------------------------------------------  *
 */
-import type { Subtask, Task, TimeEntry, TimeEntryView } from '../../types/types.js';
+import type { Subtask, Task, TimeEntry, TimeEntryView } from '../types/types.js';
 
 export interface EntryLocation {
     task: Task;

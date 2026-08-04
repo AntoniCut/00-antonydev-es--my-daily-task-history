@@ -17,7 +17,7 @@ import type {
     TimeEntry,
     TimeEntryView,
     UpdateTimeEntryDto,
-} from '../../types/types.js';
+} from '../types/types.js';
 
 export interface EntriesFilter {
     from?: string;

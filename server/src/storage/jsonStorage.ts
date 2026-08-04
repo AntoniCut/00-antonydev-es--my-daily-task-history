@@ -8,29 +8,39 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Task } from '../../types/types.js';
+import type { Task } from '../types/types.js';
 import { TASK_COLORS } from '../utils/colors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Resuelve `server/data` en desarrollo (`server/src/storage`) y en produccion
- * (`server/dist/src/storage`). Prefiere la carpeta que ya tenga `tasks.json`
- * y evita `server/dist/data`.
+ * Busca `server/data` subiendo desde este archivo. Prefiere la carpeta que
+ * ya tenga `tasks.json` y evita rutas bajo `dist/`.
  */
 const resolveDataDir = (): string => {
-    const candidates = [
-        path.resolve(__dirname, '../../data'),
-        path.resolve(__dirname, '../../../data'),
-    ];
-    const withTasks = candidates.filter((dir) => existsSync(path.join(dir, 'tasks.json')));
-    const notUnderDist = (dir: string): boolean => !dir.includes(`${path.sep}dist${path.sep}`);
+    const found: string[] = [];
+    let dir = __dirname;
+    for (let i = 0; i < 8; i++) {
+        const candidate = path.join(dir, 'data');
+        if (existsSync(candidate)) {
+            found.push(candidate);
+        }
+        const parent = path.dirname(dir);
+        if (parent === dir) {
+            break;
+        }
+        dir = parent;
+    }
+
+    const notUnderDist = (candidate: string): boolean => !candidate.includes(`${path.sep}dist${path.sep}`);
+    const withTasks = found.filter((candidate) => existsSync(path.join(candidate, 'tasks.json')));
 
     return (
         withTasks.find(notUnderDist) ??
         withTasks[0] ??
-        candidates.find(notUnderDist) ??
-        candidates[0]
+        found.find(notUnderDist) ??
+        found[0] ??
+        path.resolve(__dirname, '../../data')
     );
 };
 

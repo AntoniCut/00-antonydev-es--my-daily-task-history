@@ -5,7 +5,7 @@
 */
 import type { Request, Response } from 'express';
 import { entriesService } from '../services/entries.service.js';
-import type { CreateTimeEntryDto, UpdateTimeEntryDto } from '../../types/types.js';
+import type { CreateTimeEntryDto, UpdateTimeEntryDto } from '../types/types.js';
 
 const NOT_FOUND = 'Registro de tiempo no encontrado';
 

@@ -19,7 +19,7 @@ import type {
     Task,
     TaskReport,
     TimeEntry,
-} from '../../types/types.js';
+} from '../types/types.js';
 
 /**
  * ----------------------------

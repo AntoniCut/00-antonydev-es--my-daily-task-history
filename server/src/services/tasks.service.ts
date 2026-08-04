@@ -13,7 +13,7 @@ import type {
     Task,
     UpdateSubtaskDto,
     UpdateTaskDto,
-} from '../../types/types.js';
+} from '../types/types.js';
 
 const MAX_TITLE_LENGTH = 120;
 
