@@ -139,7 +139,8 @@ my-daily-task-history/
 │       ├── pages/          # index (dashboard), tareas, informes
 │       └── types/
 └── server/                 # Express (:3001) — API; tras build también sirve el frontend
-    ├── data/tasks.json     # Persistencia (formato v2)
+    ├── data/tasks.json     # Persistencia (formato v2; en .gitignore)
+    ├── dist/index.js       # Entrypoint de producción (tras `pnpm build`)
     └── src/
         ├── controllers/
         ├── routes/
@@ -221,6 +222,176 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 - En los registros de tiempo, `note` es la **actividad** realizada y es
   **obligatoria** al crear o modificar: vacía responde `400` con
   `La actividad es obligatoria: describe qué hiciste en ese tiempo`.
+
+## Despliegue en VPS (Nginx + PM2)
+
+Este proyecto **no usa adaptador de Astro** (`@astrojs/node`). Astro se compila
+a estático (`client/dist`) y **Express** sirve el frontend + la API en un solo
+proceso Node.
+
+Producción actual de referencia:
+
+| Concepto | Valor |
+| -------- | ----- |
+| Dominio | `https://my-daily-task-history.antonydev.es` |
+| Código en el VPS | `/var/www/my-daily-task-history` |
+| Puerto Node | `3010` (el `3001` puede estar ocupado por otra app) |
+| Entrypoint PM2 | `server/dist/index.js` |
+| Datos | `server/data/tasks.json` (no va al repo; está en `.gitignore`) |
+
+> No confundir con `/var/www/my-daily-task-history.antonydev.es` (carpeta vacía
+> creada por el panel de Hostinger). La app vive en
+> `/var/www/my-daily-task-history`.
+
+### Arquitectura
+
+```text
+Navegador → Nginx (:80/:443) → proxy → Express (:3010)
+                                      ├─ /api/*     → API REST
+                                      └─ resto      → client/dist (Astro estático)
+```
+
+### Primera vez en el VPS
+
+```bash
+cd /var/www
+git clone https://github.com/AntoniCut/my-daily-task-history.git my-daily-task-history
+cd my-daily-task-history
+
+# Node 18+ (recomendado 20+) y pnpm
+pnpm install --frozen-lockfile
+pnpm build
+
+# Comprueba el entrypoint
+ls server/dist/index.js
+ls client/dist/index.html
+
+# Prueba manual (Ctrl+C al terminar)
+PORT=3010 node server/dist/index.js
+# en otra sesión:
+curl http://127.0.0.1:3010/api/health   # {"status":"ok"}
+curl -I http://127.0.0.1:3010/          # 200 OK
+```
+
+Arranque permanente con PM2:
+
+```bash
+cd /var/www/my-daily-task-history
+PORT=3010 pm2 start server/dist/index.js --name my-daily-task-history
+pm2 save
+pm2 startup   # ejecuta el comando que imprima
+```
+
+### Nginx
+
+Un solo `server_name` activo (quita el site estático de Hostinger si existe):
+
+```bash
+sudo rm -f /etc/nginx/sites-enabled/my-daily-task-history.antonydev.es
+sudo nano /etc/nginx/sites-available/my-daily-task-history
+```
+
+```nginx
+server {
+    listen 80;
+    server_name my-daily-task-history.antonydev.es;
+
+    location / {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo ln -sf /etc/nginx/sites-available/my-daily-task-history /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+curl http://my-daily-task-history.antonydev.es/api/health
+```
+
+HTTPS:
+
+```bash
+sudo certbot --nginx -d my-daily-task-history.antonydev.es
+```
+
+### Actualizar (flujo habitual)
+
+**En local**
+
+```bash
+git add .
+git commit -m "mensaje"
+git push origin master
+```
+
+**En el VPS**
+
+```bash
+cd /var/www/my-daily-task-history
+git pull
+pnpm install --frozen-lockfile
+pnpm build
+pm2 restart my-daily-task-history
+```
+
+`git pull` solo trae código: hace falta **build + restart** para aplicar cambios.
+
+Si cambias el entrypoint de PM2 (por ejemplo de `dist/src/index.js` a
+`dist/index.js`), recrea el proceso:
+
+```bash
+pm2 delete my-daily-task-history 2>/dev/null
+PORT=3010 pm2 start server/dist/index.js --name my-daily-task-history
+pm2 save
+```
+
+### Datos de producción
+
+- `server/data/*.json` está en `.gitignore`: no se sube al repo.
+- Tras el primer deploy, las tareas viven solo en el VPS
+  (`/var/www/my-daily-task-history/server/data/tasks.json`).
+- Haz backup periódico de ese archivo.
+- Si un `git pull` antiguo se queja de cambios locales en `tasks.json`
+  (cuando aún estaba trackeado):
+
+```bash
+cp server/data/tasks.json /root/tasks.prod.json
+git checkout -- server/data/tasks.json
+git pull
+cp /root/tasks.prod.json server/data/tasks.json
+pnpm build
+pm2 restart my-daily-task-history
+```
+
+### Comprobaciones rápidas
+
+```bash
+pm2 status
+pm2 logs my-daily-task-history --lines 50
+curl http://127.0.0.1:3010/api/health
+curl -I http://127.0.0.1:3010/
+curl http://my-daily-task-history.antonydev.es/api/health
+```
+
+En el arranque, los logs de PM2 deben mostrar la ruta del frontend, por ejemplo:
+
+```text
+Frontend estático: /var/www/my-daily-task-history/client/dist
+```
+
+### Diferencias con un Astro SSR (`@astrojs/node`)
+
+| | Este proyecto | Astro SSR (p. ej. `astro-http`) |
+|--|--|--|
+| Adaptador | No | `@astrojs/node` |
+| Build | `pnpm build` | `pnpm run build:node` |
+| PM2 arranca | `server/dist/index.js` (Express) | `dist/server/entry.mjs` (Astro) |
+| Quién sirve HTML | Express (`client/dist`) | Astro Node |
 
 ## Licencia
 
