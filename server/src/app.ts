@@ -13,7 +13,20 @@ import { entriesRouter } from './routes/entries.routes.js';
 import { reportsRouter } from './routes/reports.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDist = path.resolve(__dirname, '../../client/dist');
+
+/**
+ * Resuelve `client/dist` tanto en desarrollo (`server/src`) como tras `tsc`
+ * (`server/dist/src`, porque `rootDir` es `.` e incluye `src` + `types`).
+ */
+const resolveClientDist = (): string => {
+    const candidates = [
+        path.resolve(__dirname, '../../client/dist'), // server/src o server/dist
+        path.resolve(__dirname, '../../../client/dist'), // server/dist/src
+    ];
+    return candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+};
+
+const clientDist = resolveClientDist();
 
 /**
  * ---------------------------

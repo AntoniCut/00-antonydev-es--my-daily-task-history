@@ -12,7 +12,29 @@ import type { Task } from '../../types/types.js';
 import { TASK_COLORS } from '../utils/colors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, '../../data');
+
+/**
+ * Resuelve `server/data` en desarrollo (`server/src/storage`) y en produccion
+ * (`server/dist/src/storage`). Prefiere la carpeta que ya tenga `tasks.json`
+ * y evita `server/dist/data`.
+ */
+const resolveDataDir = (): string => {
+    const candidates = [
+        path.resolve(__dirname, '../../data'),
+        path.resolve(__dirname, '../../../data'),
+    ];
+    const withTasks = candidates.filter((dir) => existsSync(path.join(dir, 'tasks.json')));
+    const notUnderDist = (dir: string): boolean => !dir.includes(`${path.sep}dist${path.sep}`);
+
+    return (
+        withTasks.find(notUnderDist) ??
+        withTasks[0] ??
+        candidates.find(notUnderDist) ??
+        candidates[0]
+    );
+};
+
+const DATA_DIR = resolveDataDir();
 const DATA_FILE = path.join(DATA_DIR, 'tasks.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'tasks.v1.backup.json');
 const SCHEMA_VERSION = 2;

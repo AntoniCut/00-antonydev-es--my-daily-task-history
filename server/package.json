@@ -4,12 +4,13 @@
   "private": true,
   "description": "API REST del diario de tareas (Express + TypeScript)",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/src/index.js"
   },
+
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2"

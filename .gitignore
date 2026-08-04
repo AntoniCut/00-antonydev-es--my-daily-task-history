@@ -2,3 +2,7 @@ node_modules/
 dist/
 .astro/
 *.log
+
+# Datos locales / de producción (no subir al repo)
+server/data/*.json
+!server/data/.gitkeep
