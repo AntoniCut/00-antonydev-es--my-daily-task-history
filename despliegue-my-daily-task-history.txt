@@ -1,0 +1,12 @@
+cd /var/www/my-daily-task-history
+git pull
+pnpm install --frozen-lockfile
+pnpm build
+pm2 restart my-daily-task-history
+
+
+
+
+
+
+
