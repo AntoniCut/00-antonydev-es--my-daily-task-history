@@ -313,10 +313,30 @@ sudo nginx -t && sudo systemctl reload nginx
 curl http://my-daily-task-history.antonydev.es/api/health
 ```
 
-HTTPS:
+### HTTPS (Let's Encrypt / Certbot)
+
+Con Nginx ya sirviendo el dominio por HTTP:
 
 ```bash
+# Si no está instalado:
+sudo apt update
+sudo apt install -y certbot python3-certbot-nginx
+
+# Emite el certificado y configura Nginx (443 + redirección HTTP→HTTPS)
 sudo certbot --nginx -d my-daily-task-history.antonydev.es
+```
+
+Comprobar:
+
+```bash
+curl -I https://my-daily-task-history.antonydev.es/api/health
+sudo certbot certificates
+```
+
+La renovación es automática con el timer de Certbot. Prueba en seco:
+
+```bash
+sudo certbot renew --dry-run
 ```
 
 ### Actualizar (flujo habitual)
