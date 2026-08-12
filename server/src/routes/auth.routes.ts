@@ -33,6 +33,16 @@ authRouter.post('/logout', (req: Request, res: Response): void =>
  * -------------------------
  * -----  `handler()`  -----
  * -------------------------
+ * - Atiende la ruta para consultar el estado de la sesión (siempre 200).
+ */
+authRouter.get('/session', (req: Request, res: Response): Promise<void> =>
+    authController.session(req, res),
+);
+
+/**
+ * -------------------------
+ * -----  `handler()`  -----
+ * -------------------------
  * - Atiende la ruta para consultar el usuario autenticado.
  */
 authRouter.get('/me', requireAuth, (req: Request, res: Response): void =>

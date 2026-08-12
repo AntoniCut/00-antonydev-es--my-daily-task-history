@@ -39,6 +39,16 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
         const body = (await response.json().catch(() => null)) as {
             error?: string;
         } | null;
+
+        //  -----  sesión perdida: volver al login (salvo al intentar entrar)  -----
+        if (
+            response.status === 401 &&
+            !path.startsWith('/auth/login') &&
+            !window.location.pathname.startsWith('/login')
+        ) {
+            window.location.replace('/login');
+        }
+
         throw new Error(
             body?.error ?? `Error ${response.status} al llamar a la API`,
         );

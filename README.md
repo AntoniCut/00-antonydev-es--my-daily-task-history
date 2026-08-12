@@ -214,6 +214,7 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 | GET    | `/api/health`                                     | Estado del servidor (público)                      |
 | POST   | `/api/auth/login`                                 | Iniciar sesión `{ username, password }`            |
 | POST   | `/api/auth/logout`                                | Cerrar la sesión actual                            |
+| GET    | `/api/auth/session`                               | ¿Hay sesión? `{ authenticated }` (siempre 200)     |
 | GET    | `/api/auth/me`                                    | Usuario autenticado (o `401`)                      |
 | GET    | `/api/tasks?includeInactive=false`                | Listar tareas con subtareas y registros            |
 | GET    | `/api/tasks/:id`                                  | Obtener una tarea                                  |
@@ -233,7 +234,9 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 
 > Todas las rutas de datos (`/api/tasks`, `/api/entries`, `/api/reports`)
 > exigen sesión: sin la cookie `sid` responden `401`.
-> `/api/health` y `/api/auth/login` quedan abiertos.
+> `/api/health`, `/api/auth/login` y `/api/auth/session` quedan abiertos
+> (el guard del frontend usa `session`, que responde siempre `200` para
+> no generar errores 401 en la consola del navegador).
 
 ### Validaciones
 

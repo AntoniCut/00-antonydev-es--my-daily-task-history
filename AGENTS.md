@@ -76,19 +76,22 @@ pnpm --filter client run format / format:check   # prettier
 - **Login**: credenciales en `server/data/users.json` (scrypt, sin
   dependencias externas; `usersStorage` en `storage/`). Sesiones en memoria
   (cookie `sid` httpOnly, 7 días; `auth.service.ts`). `/api/tasks`,
-  `/api/entries` y `/api/reports` exigen sesión vía `requireAuth`; solo
-  `/api/health` y `/api/auth/login` son públicos. Usuarios con
-  `pnpm create-user` (script en `server/src/scripts/create-user.ts`).
-  `LoginDto` y `AuthUser` viven duplicados en los `types.ts`.
+  `/api/entries` y `/api/reports` exigen sesión vía `requireAuth`; son
+  públicos `/api/health`, `/api/auth/login` y `/api/auth/session` (este
+  último responde siempre 200 `{ authenticated }` para que el guard no
+  genere errores 401 en consola). Usuarios con `pnpm create-user` (script
+  en `server/src/scripts/create-user.ts`). `LoginDto` y `AuthUser` viven
+  duplicados en los `types.ts`.
 
 ## Frontend
 
 - **Auth**: `/login` es la única página pública (prop `public` en Layout:
   sin sidebar ni header). El guard vive en el `<script is:inline>` del head
   (`window.__authGuard`, `define:vars={{ isPublic }}`): oculta la shell con
-  `html.auth-pending` mientras valida la sesión y redirige al login (o fuera
-  de él). Se re-ejecuta en cada `astro:page-load`. Logout en el pie del
-  Sidebar. `api.ts` envía `credentials: 'include'` en todas las peticiones.
+  `html.auth-pending` mientras consulta `/api/auth/session` y redirige al
+  login (o fuera de él). Se re-ejecuta en cada `astro:page-load`. Logout en
+  el pie del Sidebar. `api.ts` envía `credentials: 'include'` en todas las
+  peticiones y redirige al login si una petición de datos devuelve 401.
 
 ## Despliegue (VPS Nginx + PM2)
 

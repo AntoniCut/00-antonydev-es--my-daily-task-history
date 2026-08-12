@@ -5,7 +5,12 @@
 */
 import type { Request, Response } from 'express';
 import { SESSION_COOKIE_NAME } from '../middleware/requireAuth.js';
-import { login as loginService, logout as logoutService, SESSION_TTL_MS } from '../services/auth.service.js';
+import {
+    authenticate,
+    login as loginService,
+    logout as logoutService,
+    SESSION_TTL_MS,
+} from '../services/auth.service.js';
 import type { AuthUser, LoginDto } from '../types/types.js';
 
 const MAX_LOGIN_FAILS = 5;
@@ -167,6 +172,44 @@ export class AuthController {
 
         res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
         res.status(204).send();
+    }
+
+    /**
+     * ---------------------------
+     * -----  `session()`  -----
+     * ---------------------------
+     * - Indica si hay sesión activa; responde siempre 200 para que el
+     *   guard del frontend no genere errores 401 en consola.
+     */
+    async session(req: Request, res: Response): Promise<void> {
+        const header = req.headers.cookie ?? '';
+        const token = header
+            .split(';')
+            .map((part) => part.trim())
+            .find((part) => part.startsWith(`${SESSION_COOKIE_NAME}=`))
+            ?.slice(SESSION_COOKIE_NAME.length + 1);
+
+        //  -----  sin cookie, no hay sesión  -----
+        if (!token) {
+            res.json({ authenticated: false });
+            return;
+        }
+
+        let user: AuthUser | undefined;
+        try {
+            user = await authenticate(decodeURIComponent(token));
+        }
+        catch {
+            //  -----  token ilegible: se trata como sesión no válida  -----
+        }
+
+        //  -----  sesión inexistente o expirada  -----
+        if (!user) {
+            res.json({ authenticated: false });
+            return;
+        }
+
+        res.json({ authenticated: true, username: user.username });
     }
 
     /**

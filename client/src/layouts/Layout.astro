@@ -100,10 +100,11 @@ const {
                     let authenticated = false;
 
                     try {
-                        const response = await fetch('/api/auth/me', {
+                        const response = await fetch('/api/auth/session', {
                             credentials: 'include',
                         });
-                        authenticated = response.ok;
+                        const body = await response.json().catch(() => null);
+                        authenticated = body?.authenticated === true;
                     } catch {
                         //  -----  error de red: se trata como sesión no válida  -----
                     }
