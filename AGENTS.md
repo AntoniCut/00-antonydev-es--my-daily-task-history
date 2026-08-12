@@ -73,6 +73,22 @@ pnpm --filter client run format / format:check   # prettier
 - Reglas de negocio: `title` único entre tareas activas (normalizado, sin
   mayúsculas ni espacios extra); `note` (actividad) obligatoria en registros;
   tramos que cruzan medianoche (`end < start`) suman 24 h.
+- **Login**: credenciales en `server/data/users.json` (scrypt, sin
+  dependencias externas; `usersStorage` en `storage/`). Sesiones en memoria
+  (cookie `sid` httpOnly, 7 días; `auth.service.ts`). `/api/tasks`,
+  `/api/entries` y `/api/reports` exigen sesión vía `requireAuth`; solo
+  `/api/health` y `/api/auth/login` son públicos. Usuarios con
+  `pnpm create-user` (script en `server/src/scripts/create-user.ts`).
+  `LoginDto` y `AuthUser` viven duplicados en los `types.ts`.
+
+## Frontend
+
+- **Auth**: `/login` es la única página pública (prop `public` en Layout:
+  sin sidebar ni header). El guard vive en el `<script is:inline>` del head
+  (`window.__authGuard`, `define:vars={{ isPublic }}`): oculta la shell con
+  `html.auth-pending` mientras valida la sesión y redirige al login (o fuera
+  de él). Se re-ejecuta en cada `astro:page-load`. Logout en el pie del
+  Sidebar. `api.ts` envía `credentials: 'include'` en todas las peticiones.
 
 ## Despliegue (VPS Nginx + PM2)
 
@@ -82,5 +98,5 @@ pnpm --filter client run format / format:check   # prettier
 - **Redespliegue (ya desplegado)**: `git push` en local → en el VPS
   `git pull && pnpm install --frozen-lockfile && pnpm build && pm2 restart
   my-daily-task-history` → comprobar `/api/health`. Detalles en el README.
-- Los datos viven solo en el VPS (`server/data/tasks.json`): backup
-  periódico manual.
+- Los datos viven solo en el VPS (`server/data/tasks.json` + `users.json`):
+  backup periódico manual.

@@ -150,3 +150,18 @@ export interface StatsSummary {
     activeTasks: number;
     activeSubtasks: number;
 }
+
+/** Usuario del sistema almacenado con su contraseña hasheada (scrypt). */
+export interface AuthUser {
+    id: string;
+    username: string;
+    passwordHash: string;
+    salt: string;
+    createdAt: string;
+}
+
+/** Datos de acceso enviados al iniciar sesión. */
+export interface LoginDto {
+    username: string;
+    password: string;
+}

@@ -145,3 +145,16 @@ export interface StatsSummary {
     activeTasks: number;
     activeSubtasks: number;
 }
+
+/** Usuario autenticado tal y como lo expone la API (sin datos internos). */
+export interface AuthUser {
+    id: string;
+    username: string;
+    createdAt: string;
+}
+
+/** Datos de acceso enviados al iniciar sesión. */
+export interface LoginDto {
+    username: string;
+    password: string;
+}

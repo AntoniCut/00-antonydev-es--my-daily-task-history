@@ -1,15 +1,13 @@
 ---
-
 /*
- *  ----------------------------------------------------------------  *
- *  -----  Layout.astro  --  /client/src/layouts/Layout.astro  -----  *
- *  ----------------------------------------------------------------  *
- */
+    *  ----------------------------------------------------------------  *
+    *  -----  Layout.astro  --  /client/src/layouts/Layout.astro  -----  *
+    *  ----------------------------------------------------------------  *
+*/
 
 import { ClientRouter } from 'astro:transitions';
 import Sidebar from '../components/Sidebar.astro';
 import { THEME_STORAGE_KEY } from '../lib/theme';
-
 
 interface Props {
     title: string;
@@ -20,6 +18,8 @@ interface Props {
     fitViewport?: boolean;
     /** Fecha (YYYY-MM-DD): muestra el calendario compacto en el sidebar */
     calendarDate?: string;
+    /** Página pública (login): sin sidebar ni header y sin exigir sesión */
+    public?: boolean;
 }
 
 const {
@@ -29,27 +29,23 @@ const {
     active,
     fitViewport = false,
     calendarDate,
+    public: isPublic = false,
 } = Astro.props;
-
-
 ---
-
 
 <!doctype html>
 <html lang="es">
-    
     <head>
-        
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        
+
         <meta
             name="description"
             content="Dashboard de gestión de tareas y control del tiempo invertido"
         />
-        
+
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="app-favicon" />
-        
+
         <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
             (() => {
                 /**
@@ -73,10 +69,10 @@ const {
                 document.documentElement.style.colorScheme = theme;
 
                 /*
-                    *  ---------------------------------  *
-                    *  -----  Referencias al HTML  -----  *
-                    *  ---------------------------------  *
-                */
+                 *  ---------------------------------  *
+                 *  -----  Referencias al HTML  -----  *
+                 *  ---------------------------------  *
+                 */
 
                 // - `Enlace del favicon de la aplicación`
                 const favicon = document.getElementById('app-favicon');
@@ -90,73 +86,121 @@ const {
                 }
             })();
         </script>
-        
+
+        <script is:inline define:vars={{ isPublic }}>
+            (() => {
+                /**
+                 * ---------------------------------
+                 * -----  `guardAuth()`  -----
+                 * ---------------------------------
+                 * - Comprueba la sesión y redirige al login (o fuera de él)
+                 *   cuando corresponde. Se reutiliza en cada navegación.
+                 */
+                window.__authGuard = async () => {
+                    let authenticated = false;
+
+                    try {
+                        const response = await fetch('/api/auth/me', {
+                            credentials: 'include',
+                        });
+                        authenticated = response.ok;
+                    } catch {
+                        //  -----  error de red: se trata como sesión no válida  -----
+                    }
+
+                    //  -----  si la página es pública y ya hay sesión, salir del login  -----
+                    if (isPublic && authenticated) {
+                        window.location.replace('/');
+                        return;
+                    }
+
+                    //  -----  si la página es privada y no hay sesión, ir al login  -----
+                    if (!isPublic && !authenticated) {
+                        window.location.replace('/login');
+                        return;
+                    }
+
+                    //  -----  sin redirección: la shell ya puede mostrarse  -----
+                    document.documentElement.classList.remove('auth-pending');
+                };
+
+                //  -----  ocultar la shell hasta validar la sesión (evita parpadeo)  -----
+                document.documentElement.classList.add('auth-pending');
+                window.__authGuard();
+            })();
+        </script>
+
         <ClientRouter />
-        
+
         <title>
             {title}
         </title>
-
     </head>
-    
-    
+
     <body>
-        
         <!--  -----  shell de la página  ----- -->
-        <div 
+        <div
             class:list={[
-                'shell', 
-                { 'fit-viewport': fitViewport }
+                'shell',
+                { 'fit-viewport': fitViewport },
+                { 'public-shell': isPublic },
             ]}
         >
-            
-            <!--  -----  sidebar de la página  ----- -->
-            <Sidebar 
-                active={active} 
-                calendarDate={calendarDate} 
-            />
+            <!--  -----  sidebar de la página (solo en páginas privadas)  ----- -->
+            {
+                !isPublic && (
+                    <Sidebar active={active} calendarDate={calendarDate} />
+                )
+            }
 
             <!--  -----  contenido de la página  ----- -->
             <div class="content">
-                
-                <!--  -----  header de la página  ----- -->
-                <header class="page-header">
-                    
-                    <!--  -----  texto del header  ----- -->
-                    <div class="page-header-text">
-                        <h1>{heading}</h1>
-                        <p>{subtitle}</p>
-                    </div>
-                    
-                    <!--  -----  botón de cambio de tema  ----- -->
-                    <button
-                        type="button"
-                        class="theme-toggle"
-                        id="theme-toggle"
-                        aria-label="Cambiar tema"
-                        title="Cambiar tema"
-                    >
-                        <span class="theme-icon theme-icon-sun" aria-hidden="true"> ☀ </span>
-                        <span class="theme-icon theme-icon-moon" aria-hidden="true"> ☾ </span>
-                        <span class="theme-label" data-theme-label>Tema</span>
-                    </button>
+                <!--  -----  header de la página (solo en páginas privadas)  ----- -->
+                {
+                    !isPublic && (
+                        <header class="page-header">
+                            <div class="page-header-text">
+                                <h1>{heading}</h1>
+                                <p>{subtitle}</p>
+                            </div>
 
-                </header>
+                            <button
+                                type="button"
+                                class="theme-toggle"
+                                id="theme-toggle"
+                                aria-label="Cambiar tema"
+                                title="Cambiar tema"
+                            >
+                                <span
+                                    class="theme-icon theme-icon-sun"
+                                    aria-hidden="true"
+                                >
+                                    {' '}
+                                    ☀{' '}
+                                </span>
+                                <span
+                                    class="theme-icon theme-icon-moon"
+                                    aria-hidden="true"
+                                >
+                                    {' '}
+                                    ☾{' '}
+                                </span>
+                                <span class="theme-label" data-theme-label>
+                                    Tema
+                                </span>
+                            </button>
+                        </header>
+                    )
+                }
 
                 <!--  -----  contenido principal de la página  ----- -->
                 <main class="page-main">
                     <slot />
                 </main>
-
             </div>
-
         </div>
-
     </body>
-
 </html>
-
-
 
 <script>
     import {
@@ -166,6 +210,12 @@ const {
         type Theme,
     } from '../lib/theme';
 
+    declare global {
+        interface Window {
+            /** Guard de autenticación definido en el script inline del head */
+            __authGuard?: () => Promise<void>;
+        }
+    }
 
     // ClientRouter reemplaza el documento: reaplicar el tema tras cada navegación.
 
@@ -184,6 +234,18 @@ const {
     //  -----  se ejecuta al cargar la página  -----
     syncTheme();
 
+    /**
+     * ---------------------------------
+     * -----  `runAuthGuard()`  -----
+     * ---------------------------------
+     * - Revalida la sesión tras cada navegación cliente.
+     */
+    const runAuthGuard = (): void => {
+        window.__authGuard?.();
+    };
+
+    //  -----  se ejecuta después de cada navegación  -----
+    document.addEventListener('astro:page-load', runAuthGuard);
 
     /**
      * --------------------------------------
@@ -193,7 +255,6 @@ const {
      */
     const labelFor = (theme: Theme): string =>
         theme === 'dark' ? 'Modo oscuro' : 'Modo claro';
-
 
     /**
      * ---------------------------
@@ -205,10 +266,10 @@ const {
         const theme = resolveTheme();
 
         /*
-            *  ---------------------------------  *
-            *  -----  Referencias al HTML  -----  *
-            *  ---------------------------------  *
-        */
+         *  ---------------------------------  *
+         *  -----  Referencias al HTML  -----  *
+         *  ---------------------------------  *
+         */
 
         // - `Botón para alternar el tema`
         const button = document.getElementById(
@@ -237,9 +298,7 @@ const {
         if (label) {
             label.textContent = labelFor(theme);
         }
-
     };
-
 
     /**
      * ---------------------------
@@ -249,10 +308,10 @@ const {
      */
     const bindToggle = (): void => {
         /*
-            *  ---------------------------------  *
-            *  -----  Referencias al HTML  -----  *
-            *  ---------------------------------  *
-        */
+         *  ---------------------------------  *
+         *  -----  Referencias al HTML  -----  *
+         *  ---------------------------------  *
+         */
 
         // - `Botón para alternar el tema`
         const button = document.getElementById(
@@ -283,21 +342,29 @@ const {
 
     //  -----  se vincula el evento click al botón de cambio de tema -----
     bindToggle();
-
 </script>
 
 <style>
-    
     .shell {
         display: grid;
         grid-template-columns: 300px 1fr;
         min-height: 100vh;
     }
 
+    /* Página pública (login): sin columna de sidebar */
+    .shell.public-shell {
+        grid-template-columns: 1fr;
+    }
+
     .shell.fit-viewport {
         height: 100dvh;
         min-height: 0;
         overflow: hidden;
+    }
+
+    /* Mientras el guard de auth valida la sesión, ocultar el contenido */
+    :global(html.auth-pending body) {
+        visibility: hidden;
     }
 
     .content {

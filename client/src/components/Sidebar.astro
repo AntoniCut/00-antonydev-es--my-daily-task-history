@@ -1,9 +1,9 @@
 ---
 /*
- *  ---------------------------------------------------------------------  *
- *  -----  Sidebar.astro  --  /client/src/components/Sidebar.astro  -----  *
- *  ---------------------------------------------------------------------  *
- */
+    *  ---------------------------------------------------------------------  *
+    *  -----  Sidebar.astro  --  /client/src/components/Sidebar.astro  -----  *
+    *  ---------------------------------------------------------------------  *
+*/
 
 // Navegación lateral del dashboard. En la vista de un día muestra el
 // calendario compacto debajo de Informes (flotante en desktop; acoplado
@@ -39,7 +39,7 @@ const links = [
             <small>Control de tiempo</small>
         </span>
     </a>
-    
+
     <nav class="nav" aria-label="Secciones">
         {
             links.map((link) => (
@@ -74,8 +74,70 @@ const links = [
         )
     }
 
-    <p class="sidebar-foot">Datos guardados en tu propio servidor</p>
+    <div class="sidebar-foot">
+        <p class="sidebar-note">Datos guardados en tu propio servidor</p>
+        <button
+            type="button"
+            class="logout-btn"
+            id="logout-button"
+            title="Cerrar sesión"
+        >
+            Cerrar sesión
+        </button>
+    </div>
 </aside>
+
+<script>
+    import { api } from '../lib/api';
+    import { onPageReady } from '../lib/dom';
+
+    /**
+     * -----------------------------------
+     * -----  `bindLogout()`  -----
+     * -----------------------------------
+     * - Cierra la sesión y redirige al login.
+     */
+    const bindLogout = (signal: AbortSignal): void => {
+        /*
+         *  ---------------------------------  *
+         *  -----  Referencias al HTML  -----  *
+         *  ---------------------------------  *
+         */
+
+        // - `Botón de cierre de sesión`
+        const button = document.getElementById(
+            'logout-button',
+        ) as HTMLButtonElement | null;
+
+        //  -----  si no existe el botón, salir  -----
+        if (!button) return;
+
+        //  -----  si ya está vinculado, no duplicar el listener  -----
+        if (button.dataset.bound === 'true') return;
+
+        button.dataset.bound = 'true';
+
+        button.addEventListener(
+            'click',
+            async (event: MouseEvent): Promise<void> => {
+                event.preventDefault();
+
+                //  -----  intentar cerrar la sesión; se redirige igualmente  -----
+                try {
+                    await api.logout();
+                } catch {
+                    //  -----  si falla, el login acabará rechazando la sesión igualmente  -----
+                }
+
+                window.location.replace('/login');
+            },
+            { signal },
+        );
+    };
+
+    //  -----  se inicializa en cada carga de página  -----
+    onPageReady(bindLogout);
+</script>
 
 <style>
     .sidebar {
@@ -173,8 +235,33 @@ const links = [
 
     .sidebar-foot {
         margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .sidebar-note {
         color: var(--color-text-muted);
         font-size: 0.72rem;
+    }
+
+    .logout-btn {
+        align-self: flex-start;
+        background: none;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        color: var(--color-text-muted);
+        font-size: 0.82rem;
+        font-weight: 500;
+        padding: 0.35rem 0.8rem;
+        transition:
+            color 0.15s ease,
+            border-color 0.15s ease;
+    }
+
+    .logout-btn:hover {
+        color: var(--color-danger);
+        border-color: var(--color-danger);
     }
 
     @media (max-width: 900px) {
@@ -226,8 +313,14 @@ const links = [
             height: 0;
         }
 
-        .sidebar-foot {
+        /* En móvil la nota sobra; el botón de cerrar sesión se mantiene */
+        .sidebar-note {
             display: none;
+        }
+
+        .logout-btn {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
         }
 
         /* Separación respecto al título del día / contenido */

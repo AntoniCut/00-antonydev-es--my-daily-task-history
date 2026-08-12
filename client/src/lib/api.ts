@@ -4,9 +4,11 @@
     *  ----------------------------------------------------------------  *
 */
 import type {
+    AuthUser,
     CreateSubtaskDto,
     CreateTaskDto,
     CreateTimeEntryDto,
+    LoginDto,
     ReportSummary,
     StatsSummary,
     Subtask,
@@ -24,10 +26,12 @@ const API_URL = import.meta.env.PUBLIC_API_URL ?? '/api';
  * -----  `request<T>(path, options)`  -----
  * --------------------------------------------
  * - Ejecuta una petición JSON contra la API y valida la respuesta.
+ * - Incluye las cookies de sesión en la petición.
  */
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
     const response = await fetch(`${API_URL}${path}`, {
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         ...options,
     });
 
@@ -67,6 +71,35 @@ const query = (params: Record<string, string | undefined>): string => {
 };
 
 export const api = {
+    /**
+     * ----------------------------------------
+     * -----  `login(dto)`  -----
+     * ----------------------------------------
+     * - Inicia sesión y deja la cookie de sesión en el navegador.
+     */
+    login: (dto: LoginDto): Promise<void> =>
+        request<void>('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify(dto),
+        }),
+
+    /**
+     * ------------------------------------
+     * -----  `logout()`  -----
+     * ------------------------------------
+     * - Cierra la sesión actual en el servidor.
+     */
+    logout: (): Promise<void> =>
+        request<void>('/auth/logout', { method: 'POST' }),
+
+    /**
+     * -------------------------------
+     * -----  `me()`  -----
+     * -------------------------------
+     * - Devuelve el usuario autenticado o lanza un error 401.
+     */
+    me: (): Promise<AuthUser> => request<AuthUser>('/auth/me'),
+
     /**
      * -----------------------------------------------------
      * -----  `getTasks()`  -----

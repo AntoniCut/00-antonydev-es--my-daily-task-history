@@ -11,6 +11,8 @@ import cors from 'cors';
 import { tasksRouter } from './routes/tasks.routes.js';
 import { entriesRouter } from './routes/entries.routes.js';
 import { reportsRouter } from './routes/reports.routes.js';
+import { authRouter } from './routes/auth.routes.js';
+import { requireAuth } from './middleware/requireAuth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -56,6 +58,11 @@ export const createApp = (): Express => {
     app.get('/api/health', (_req: Request, res: Response): void => {
         res.json({ status: 'ok' });
     });
+
+    app.use('/api/auth', authRouter);
+
+    //  -----  el resto de la API solo se sirve con sesión válida  -----
+    app.use(['/api/tasks', '/api/entries', '/api/reports'], requireAuth);
 
     app.use('/api/tasks', tasksRouter);
     app.use('/api/entries', entriesRouter);

@@ -24,8 +24,9 @@ Otras Tareas (tarea)
 7. [Estructura](#estructura)
 8. [Modelo de datos](#modelo-de-datos)
 9. [API REST](#api-rest)
-10. [Despliegue en VPS (Nginx + PM2)](#despliegue-en-vps-nginx--pm2)
-11. [Licencia](#licencia)
+10. [Acceso (login)](#acceso-login)
+11. [Despliegue en VPS (Nginx + PM2)](#despliegue-en-vps-nginx--pm2)
+12. [Licencia](#licencia)
 
 ## Qué se puede hacer
 
@@ -210,7 +211,10 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 
 | Método | Endpoint                                          | Descripción                                        |
 | ------ | ------------------------------------------------- | -------------------------------------------------- |
-| GET    | `/api/health`                                     | Estado del servidor                                |
+| GET    | `/api/health`                                     | Estado del servidor (público)                      |
+| POST   | `/api/auth/login`                                 | Iniciar sesión `{ username, password }`            |
+| POST   | `/api/auth/logout`                                | Cerrar la sesión actual                            |
+| GET    | `/api/auth/me`                                    | Usuario autenticado (o `401`)                      |
 | GET    | `/api/tasks?includeInactive=false`                | Listar tareas con subtareas y registros            |
 | GET    | `/api/tasks/:id`                                  | Obtener una tarea                                  |
 | POST   | `/api/tasks`                                      | Alta `{ title, description?, color?, subtasks? }`  |
@@ -227,6 +231,10 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 | GET    | `/api/reports/days?month=YYYY-MM`                 | Minutos por día (o `?from=&to=`)                   |
 | GET    | `/api/reports/stats?date=YYYY-MM-DD`              | Contadores de hoy, semana y mes                    |
 
+> Todas las rutas de datos (`/api/tasks`, `/api/entries`, `/api/reports`)
+> exigen sesión: sin la cookie `sid` responden `401`.
+> `/api/health` y `/api/auth/login` quedan abiertos.
+
 ### Validaciones
 
 - El `title` de tarea es **único entre las tareas activas**: al crear o
@@ -236,6 +244,30 @@ arrancar y guarda una copia en `server/data/tasks.v1.backup.json`.
 - En los registros de tiempo, `note` es la **actividad** realizada y es
   **obligatoria** al crear o modificar: vacía responde `400` con
   `La actividad es obligatoria: describe qué hiciste en ese tiempo`.
+
+## Acceso (login)
+
+La app pide usuario y contraseña antes de mostrar nada. El plan es
+single-user por ahora, pero el almacenamiento ya soporta varios usuarios.
+
+- **Credenciales**: viven en `server/data/users.json` (en `.gitignore`,
+  solo en el VPS), con la contraseña hasheada con `scrypt` (nunca en claro).
+- **Sesión**: cookie `sid` httpOnly de 7 días. Al reiniciar PM2 se pide
+  login otra vez (las sesiones viven en memoria).
+- **Anti-fuerza bruta**: 5 intentos fallidos de login bloquean la IP
+  durante 15 minutos (en memoria).
+- En el frontend, `/login` es la única página pública; el resto redirige
+  al login si no hay sesión, y el login redirige al dashboard si ya la hay.
+
+**Crear o cambiar la contraseña de un usuario**:
+
+```bash
+pnpm create-user                    # pide usuario y contraseña
+pnpm create-user --username antony  # o con el nombre en el argumento
+```
+
+Te pedirá la contraseña dos veces sin mostrarla. Mínimo 8 caracteres.
+Si el usuario ya existe, solo se actualiza la contraseña.
 
 ## Despliegue en VPS (Nginx + PM2)
 
@@ -283,6 +315,12 @@ pm2 restart my-daily-task-history
 `git pull` solo trae código: hace falta **build + restart** para aplicar
 cambios. Los datos (`server/data/tasks.json`) no viajan por git: viven solo
 en el VPS.
+
+> **Solo la primera vez que despliegues una versión con login**: crea tu
+> usuario en el VPS con `pnpm create-user` (te pedirá usuario y contraseña).
+> `users.json` tampoco viaja por git, así que sin este paso nadie podrá
+> entrar. Después del `pm2 restart` se pide login de nuevo (las sesiones
+> viven en memoria).
 
 **Comprobar:**
 
@@ -333,6 +371,16 @@ PORT=3010 node server/dist/index.js
 curl http://127.0.0.1:3010/api/health   # {"status":"ok"}
 curl -I http://127.0.0.1:3010/          # 200 OK
 ```
+
+**Crear tu usuario** (antes de arrancar PM2; se guarda en
+`server/data/users.json`, que no sube al repo):
+
+```bash
+pnpm create-user
+```
+
+> Si arrancas sin usuarios creados, la app sigue funcionando pero no hay
+> forma de entrar: ejecuta `pnpm create-user` cuando quieras.
 
 Arranque permanente con PM2:
 
@@ -412,7 +460,8 @@ Ver la sección **[Redespliegue (si no es la primera vez)](#redespliegue-si-no-e
 - `server/data/*.json` está en `.gitignore`: no se sube al repo.
 - Tras el primer deploy, las tareas viven solo en el VPS
   (`/var/www/my-daily-task-history/server/data/tasks.json`).
-- Haz backup periódico de ese archivo.
+- Las credenciales viven en `server/data/users.json` (mismo directorio):
+  haz backup de ambos archivos.
 - Si un `git pull` antiguo se queja de cambios locales en `tasks.json`
   (cuando aún estaba trackeado):
 

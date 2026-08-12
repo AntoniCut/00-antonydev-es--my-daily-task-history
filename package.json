@@ -9,7 +9,8 @@
     "dev:client": "pnpm --filter client run dev",
     "build": "pnpm --filter server run build && pnpm --filter client run build",
     "preview": "pnpm --filter server run start",
-    "start": "pnpm --filter server run start"
+    "start": "pnpm --filter server run start",
+    "create-user": "pnpm --filter server run create-user"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
