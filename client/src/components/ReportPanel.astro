@@ -185,7 +185,15 @@
             total: number,
             color: string,
         ): HTMLElement => {
-            const track = create('span', { className: 'bar-track' });
+            const track = create('span', {
+                className: 'bar-track',
+                attrs: {
+                    role: 'progressbar',
+                    'aria-valuemin': '0',
+                    'aria-valuenow': String(minutes),
+                    'aria-valuemax': String(total),
+                },
+            });
             const fill = create('span', { className: 'bar-fill' });
             fill.style.width = `${total ? Math.max((minutes / total) * 100, 2) : 0}%`;
             fill.style.backgroundColor = color;

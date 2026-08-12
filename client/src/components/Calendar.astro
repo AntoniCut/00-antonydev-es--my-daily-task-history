@@ -102,6 +102,7 @@ const transitionName = 'calendar';
     import { onDataChanged } from '../lib/events';
     import {
         MONTH_NAMES,
+        formatDateLong,
         formatMinutes,
         monthRange,
         pad,
@@ -340,7 +341,10 @@ const transitionName = 'calendar';
 
                 const cell = create('button', {
                     className: 'day-cell',
-                    attrs: { type: 'button', 'aria-label': dateKey },
+                    attrs: {
+                        type: 'button',
+                        'aria-label': formatDateLong(dateKey),
+                    },
                 });
                 if (dateKey === today) cell.classList.add('is-today');
                 if (dateKey === selectedDate) cell.classList.add('is-selected');

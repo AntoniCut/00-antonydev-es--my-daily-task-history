@@ -403,7 +403,7 @@
                 className: 'icon-btn',
                 text,
                 title,
-                attrs: { type: 'button' },
+                attrs: { type: 'button', 'aria-label': title },
             });
             button.addEventListener('click', onClick, { signal });
             return button;

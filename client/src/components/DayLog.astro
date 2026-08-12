@@ -38,6 +38,7 @@ const { date } = Astro.props;
                 type="button"
                 data-toggle-form
                 aria-haspopup="dialog"
+                aria-expanded="false"
             >
                 Agregar tarea
             </button>
@@ -55,9 +56,9 @@ const { date } = Astro.props;
 
         <ul class="entry-list" data-list></ul>
 
-        <p class="empty-text" data-empty hidden>
+        <button class="empty-text" type="button" data-empty hidden>
             Aún no hay nada. ¿Quieres agregar tareas…?
-        </p>
+        </button>
     </div>
 
     <dialog class="entry-dialog" data-dialog aria-labelledby="entry-dialog-title">
@@ -214,7 +215,7 @@ const { date } = Astro.props;
         const listEl = query<HTMLUListElement>(root, '[data-list]');
 
         // - `Estado vacío del día`
-        const emptyEl = query<HTMLParagraphElement>(root, '[data-empty]');
+        const emptyEl = query<HTMLButtonElement>(root, '[data-empty]');
 
         // Con persist el DOM no se regenera: la fecha nueva viene de la URL.
         let currentDate = dateFromUrl() || root.dataset.date || todayKey();
@@ -253,8 +254,16 @@ const { date } = Astro.props;
             startInput.value = startInput.value || currentTime();
             showError(formErrorEl, null);
             if (!dialog.open) dialog.showModal();
+            toggleFormBtn.setAttribute('aria-expanded', 'true');
             taskSelect.focus();
         };
+
+        //  -----  sincronizar el estado del diálogo con el botón de apertura  -----
+        dialog.addEventListener(
+            'close',
+            () => toggleFormBtn.setAttribute('aria-expanded', 'false'),
+            { signal },
+        );
 
         /**
          * ----------------------------------
@@ -434,13 +443,13 @@ const { date } = Astro.props;
                 className: 'icon-btn',
                 text: '✏️',
                 title: 'Editar registro',
-                attrs: { type: 'button' },
+                attrs: { type: 'button', 'aria-label': 'Editar registro' },
             });
             const deleteBtn = create('button', {
                 className: 'icon-btn',
                 text: '🗑️',
                 title: 'Eliminar registro',
-                attrs: { type: 'button' },
+                attrs: { type: 'button', 'aria-label': 'Eliminar registro' },
             });
             actions.append(editBtn, deleteBtn);
 
@@ -833,11 +842,14 @@ const { date } = Astro.props;
     }
 
     .empty-text {
+        display: block;
+        width: 100%;
         cursor: pointer;
         margin: 0.35rem 0 0;
         padding: 1rem 0.85rem;
         text-align: center;
         color: var(--color-text-muted);
+        font-family: inherit;
         font-size: 0.9rem;
         line-height: 1.45;
         border: 1px dashed var(--color-border);
