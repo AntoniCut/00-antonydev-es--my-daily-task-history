@@ -34,7 +34,7 @@ export const WEEKDAY_NAMES = [
  * ----------------------------
  * - Rellena con cero a la izquierda un valor numérico de una cifra.
  */
-const pad = (value: number): string => String(value).padStart(2, '0');
+export const pad = (value: number): string => String(value).padStart(2, '0');
 
 /**
  * --------------------------------
@@ -132,6 +132,7 @@ export const formatHours = (minutes: number): string =>
     (minutes / 60).toLocaleString('es-ES', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
+        useGrouping: false,
     });
 
 export interface DateRange {

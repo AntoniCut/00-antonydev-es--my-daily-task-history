@@ -346,17 +346,8 @@
 
         /**
          * ----------------------------------------
-         * -----  `hoursForCsv(minutes)`  -----
-         * ----------------------------------------
-         * - Convierte minutos a horas decimales con coma para CSV.
-         */
-        const hoursForCsv = (minutes: number): string =>
-            (minutes / 60).toFixed(2).replace('.', ',');
-
-        /**
-         * -------------------------------------------
          * -----  `downloadCsv(filename, rows)`  -----
-         * -------------------------------------------
+         * ----------------------------------------
          * - Genera y descarga el archivo CSV del informe actual.
          */
         const downloadCsv = (filename: string, rows: string[][]): void => {
@@ -423,7 +414,7 @@
                         entry.taskTitle,
                         entry.subtaskTitle ?? '',
                         String(entry.minutes),
-                        hoursForCsv(entry.minutes),
+                        formatHours(entry.minutes),
                         (entry.note ?? '').replaceAll('\r\n', '\n'),
                     ]),
                 ];

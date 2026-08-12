@@ -8,6 +8,7 @@
 
 import { ClientRouter } from 'astro:transitions';
 import Sidebar from '../components/Sidebar.astro';
+import { THEME_STORAGE_KEY } from '../lib/theme';
 
 
 interface Props {
@@ -49,7 +50,7 @@ const {
         
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" id="app-favicon" />
         
-        <script is:inline>
+        <script is:inline define:vars={{ themeKey: THEME_STORAGE_KEY }}>
             (() => {
                 /**
                  * -----------------------------
@@ -58,7 +59,7 @@ const {
                  * - Resuelve el tema inicial y lo aplica antes del primer render.
                  */
 
-                const key = 'theme';
+                const key = themeKey;
                 const stored = localStorage.getItem(key);
 
                 const theme =

@@ -92,12 +92,19 @@ const transitionName = 'calendar';
     import { navigate } from 'astro:transitions/client';
     import { api } from '../lib/api';
     import { create, onPageReady, query, showError } from '../lib/dom';
-    import { dockFixed, makeDraggable } from '../lib/draggable';
+    import {
+        COMPACT_STORAGE_KEY,
+        dockFixed,
+        makeDraggable,
+        placeFixed,
+        readSavedPosition,
+    } from '../lib/draggable';
     import { onDataChanged } from '../lib/events';
     import {
         MONTH_NAMES,
         formatMinutes,
         monthRange,
+        pad,
         todayKey,
     } from '../lib/time';
 
@@ -120,7 +127,6 @@ const transitionName = 'calendar';
      * ----------------------------------------
      * - Preancla el calendario compacto antes del swap para conservar el morph.
      */
-    const COMPACT_STORAGE_KEY = 'calendar-compact-position';
     let preSwapBound = false;
 
     const preAnchorCompact = (doc: Document): void => {
@@ -135,39 +141,18 @@ const transitionName = 'calendar';
             return;
         }
 
-        let x = 0;
-        let y = 0;
-        try {
-            const raw = localStorage.getItem(COMPACT_STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
-                if (typeof parsed.x === 'number') x = parsed.x;
-                if (typeof parsed.y === 'number') y = parsed.y;
-            }
-        } catch {
-            /* ignore */
+        //  -----  si hay posición guardada, usarla; si no, la por defecto  -----
+        const saved = readSavedPosition(COMPACT_STORAGE_KEY);
+        let x = 300;
+        let y = 80;
+        if (saved && (saved.x || saved.y)) {
+            x = saved.x;
+            y = saved.y;
         }
 
-        //  -----  si no hay posición guardada, usar la posición por defecto  -----
-        if (!x && !y) {
-            x = 300;
-            y = 80;
-        }
-
-        const maxX = Math.max(0, window.innerWidth - cal.offsetWidth);
-        const maxY = Math.max(0, window.innerHeight - cal.offsetHeight);
-        x = Math.min(Math.max(x, 0), maxX);
-        y = Math.min(Math.max(y, 0), maxY);
-
+        placeFixed(cal, x, y);
         cal.classList.add('is-floating');
         cal.classList.remove('is-docked');
-        cal.style.position = 'fixed';
-        cal.style.left = `${x}px`;
-        cal.style.top = `${y}px`;
-        cal.style.right = 'auto';
-        cal.style.bottom = 'auto';
-        cal.style.margin = '0';
-        cal.style.zIndex = '50';
         cal.style.visibility = 'visible';
     };
 
@@ -216,14 +201,6 @@ const transitionName = 'calendar';
         const todayBtn = query<HTMLButtonElement>(root, '[data-today]');
 
         const today = todayKey();
-
-        /**
-         * -------------------------
-         * -----  `pad(value)`  -----
-         * -------------------------
-         * - Rellena un número a dos dígitos para formar claves de fecha.
-         */
-        const pad = (value: number): string => String(value).padStart(2, '0');
 
         const initialSelected = root.dataset.selected || today;
         let [viewYear, viewMonth] = [
@@ -449,7 +426,6 @@ const transitionName = 'calendar';
             const host = document.getElementById(
                 'sidebar-calendar-host',
             ) as HTMLDivElement | null;
-            const storageKey = 'calendar-compact-position';
             const mobileQuery = window.matchMedia('(max-width: 900px)');
             let dragCleanup: (() => void) | null = null;
 
@@ -479,13 +455,13 @@ const transitionName = 'calendar';
                 host?.classList.remove('is-calendar-docked');
 
                 // Anclar antes de hacerlo visible (clase is-floating).
-                if (host) dockFixed(root, host, storageKey);
+                if (host) dockFixed(root, host, COMPACT_STORAGE_KEY);
                 root.classList.add('is-floating');
 
                 if (!dragCleanup) {
                     dragCleanup = makeDraggable(root, {
                         handle: '[data-drag-handle]',
-                        storageKey,
+                        storageKey: COMPACT_STORAGE_KEY,
                         signal,
                     });
                 }
@@ -515,7 +491,7 @@ const transitionName = 'calendar';
                 'resize',
                 () => {
                     if (!mobileQuery.matches && host) {
-                        dockFixed(root, host, storageKey);
+                        dockFixed(root, host, COMPACT_STORAGE_KEY);
                     }
                 },
                 { signal },

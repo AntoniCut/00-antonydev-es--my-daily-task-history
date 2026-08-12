@@ -13,22 +13,16 @@ export interface DraggableOptions {
     signal?: AbortSignal;
 }
 
-/**
- * ----------------------------------------
- * -----  `clamp(value, min, max)`  -----
- * ----------------------------------------
- * - Limita un valor numérico dentro de un rango mínimo y máximo.
- */
-const clamp = (value: number, min: number, max: number): number =>
-    Math.min(Math.max(value, min), max);
+/** Clave de localStorage de la posición flotante del calendario compacto. */
+export const COMPACT_STORAGE_KEY = 'calendar-compact-position';
 
 /**
- * --------------------------------
- * -----  `readSaved(key)`  -----
- * --------------------------------
+ * ------------------------------------------
+ * -----  `readSavedPosition(key)`  -----
+ * ------------------------------------------
  * - Recupera una posición guardada válida desde localStorage.
  */
-const readSaved = (key: string): { x: number; y: number } | null => {
+export const readSavedPosition = (key: string): { x: number; y: number } | null => {
     try {
         const raw = localStorage.getItem(key);
         if (!raw) {
@@ -44,6 +38,15 @@ const readSaved = (key: string): { x: number; y: number } | null => {
     }
     return null;
 };
+
+/**
+ * ----------------------------------------
+ * -----  `clamp(value, min, max)`  -----
+ * ----------------------------------------
+ * - Limita un valor numérico dentro de un rango mínimo y máximo.
+ */
+const clamp = (value: number, min: number, max: number): number =>
+    Math.min(Math.max(value, min), max);
 
 /**
  * ----------------------------------------
@@ -76,7 +79,7 @@ export const dockFixed = (
     storageKey?: string,
 ): void => {
     if (storageKey) {
-        const saved = readSaved(storageKey);
+        const saved = readSavedPosition(storageKey);
         if (saved) {
             placeFixed(el, saved.x, saved.y);
             return;
