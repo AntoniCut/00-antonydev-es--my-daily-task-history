@@ -139,10 +139,6 @@ export class ReportsService {
             todayMinutes: total(date, date),
             weekMinutes: total(week.from, week.to),
             monthMinutes: total(month.from, month.to),
-            weekFrom: week.from,
-            weekTo: week.to,
-            monthFrom: month.from,
-            monthTo: month.to,
             activeTasks: activeTasks.length,
             activeSubtasks: activeTasks.reduce(
                 (count, task) => count + task.subtasks.filter((sub) => sub.active).length,

@@ -7,7 +7,6 @@ import type {
     CreateSubtaskDto,
     CreateTaskDto,
     CreateTimeEntryDto,
-    DayTotal,
     ReportSummary,
     StatsSummary,
     Subtask,
@@ -70,22 +69,11 @@ const query = (params: Record<string, string | undefined>): string => {
 export const api = {
     /**
      * -----------------------------------------------------
-     * -----  `getTasks(options)`  -----
+     * -----  `getTasks()`  -----
      * -----------------------------------------------------
-     * - Obtiene la lista de tareas y permite excluir las inactivas.
+     * - Obtiene la lista completa de tareas, activas e inactivas.
      */
-    getTasks: (options: { includeInactive?: boolean } = {}): Promise<Task[]> =>
-        request<Task[]>(
-            `/tasks${options.includeInactive === false ? '?includeInactive=false' : ''}`,
-        ),
-
-    /**
-     * --------------------------------
-     * -----  `getTask(id)`  -----
-     * --------------------------------
-     * - Obtiene una tarea por su identificador.
-     */
-    getTask: (id: string): Promise<Task> => request<Task>(`/tasks/${id}`),
+    getTasks: (): Promise<Task[]> => request<Task[]>('/tasks'),
 
     /**
      * ----------------------------------------
@@ -217,16 +205,6 @@ export const api = {
     getSummary: (
         range: { from?: string; to?: string; month?: string } = {},
     ): Promise<ReportSummary> => request<ReportSummary>(`/reports/summary${query(range)}`),
-
-    /**
-     * --------------------------------------------
-     * -----  `getDayTotals(range)`  -----
-     * --------------------------------------------
-     * - Obtiene los totales diarios del rango solicitado.
-     */
-    getDayTotals: (
-        range: { from?: string; to?: string; month?: string } = {},
-    ): Promise<DayTotal[]> => request<DayTotal[]>(`/reports/days${query(range)}`),
 
     /**
      * ------------------------------------

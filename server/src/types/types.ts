@@ -147,10 +147,6 @@ export interface StatsSummary {
     todayMinutes: number;
     weekMinutes: number;
     monthMinutes: number;
-    weekFrom: string;
-    weekTo: string;
-    monthFrom: string;
-    monthTo: string;
     activeTasks: number;
     activeSubtasks: number;
 }
