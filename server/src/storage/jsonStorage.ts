@@ -153,6 +153,13 @@ export class JsonStorage {
             parsed = JSON.parse(raw);
         }
         catch {
+            //  -----  si el archivo esta corrupto, conservar copia antes de vaciarlo  -----
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const corruptFile = path.join(DATA_DIR, `tasks.corrupto-${stamp}.json`);
+            console.warn(
+                `tasks.json está corrupto; se conserva una copia en ${corruptFile}`,
+            );
+            await rename(DATA_FILE, corruptFile);
             return emptyFile();
         }
 
@@ -178,11 +185,13 @@ export class JsonStorage {
      * -----------------------
      * -----  `save()`  -----
      * -----------------------
-     * - Persiste el archivo de datos con formato JSON legible.
+     * - Persiste el archivo de datos con formato JSON legible y escritura atomica.
      */
     private async save(data: DataFile): Promise<void> {
         await this.ensureDir();
-        await writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+        const tmpFile = `${DATA_FILE}.tmp`;
+        await writeFile(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+        await rename(tmpFile, DATA_FILE);
     }
 
     /**
