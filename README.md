@@ -13,6 +13,20 @@ Otras Tareas (tarea)
 └── Gasolinera (subtarea)
 ```
 
+## Índice
+
+1. [Qué se puede hacer](#qué-se-puede-hacer)
+2. [Stack](#stack)
+3. [Requisitos](#requisitos)
+4. [Instalación](#instalación)
+5. [Uso](#uso)
+6. [Secciones de la aplicación](#secciones-de-la-aplicación)
+7. [Estructura](#estructura)
+8. [Modelo de datos](#modelo-de-datos)
+9. [API REST](#api-rest)
+10. [Despliegue en VPS (Nginx + PM2)](#despliegue-en-vps-nginx--pm2)
+11. [Licencia](#licencia)
+
 ## Qué se puede hacer
 
 - **Altas**: crear una tarea indicando sus subtareas en el mismo formulario, y
