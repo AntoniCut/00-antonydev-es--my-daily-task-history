@@ -243,6 +243,53 @@ Producción actual de referencia:
 > creada por el panel de Hostinger). La app vive en
 > `/var/www/my-daily-task-history`.
 
+### Redespliegue (si no es la primera vez)
+
+Si el proyecto **ya está desplegado** (instalado, PM2 y Nginx funcionando),
+actualizarlo es tan sencillo como:
+
+**En local** — subir el código:
+
+```bash
+git add .
+git commit -m "mensaje"
+git push origin master
+```
+
+**En el VPS** — bajar, instalar, compilar y reiniciar:
+
+```bash
+cd /var/www/my-daily-task-history
+git pull
+pnpm install --frozen-lockfile
+pnpm build
+pm2 restart my-daily-task-history
+```
+
+`git pull` solo trae código: hace falta **build + restart** para aplicar
+cambios. Los datos (`server/data/tasks.json`) no viajan por git: viven solo
+en el VPS.
+
+**Comprobar:**
+
+```bash
+pm2 status
+pm2 logs my-daily-task-history --lines 50
+curl https://my-daily-task-history.antonydev.es/api/health   # {"status":"ok"}
+```
+
+Si el entrypoint de PM2 cambió (p. ej. de `dist/src/index.js` a
+`dist/index.js`), recrea el proceso:
+
+```bash
+pm2 delete my-daily-task-history 2>/dev/null
+PORT=3010 pm2 start server/dist/index.js --name my-daily-task-history
+pm2 save
+```
+
+> El resto de este capítulo (primera vez, Nginx, HTTPS) solo hace falta si se
+> reinstala el servidor desde cero.
+
 ### Arquitectura
 
 ```text
@@ -341,34 +388,10 @@ sudo certbot renew --dry-run
 
 ### Actualizar (flujo habitual)
 
-**En local**
-
-```bash
-git add .
-git commit -m "mensaje"
-git push origin master
-```
-
-**En el VPS**
-
-```bash
-cd /var/www/my-daily-task-history
-git pull
-pnpm install --frozen-lockfile
-pnpm build
-pm2 restart my-daily-task-history
-```
-
-`git pull` solo trae código: hace falta **build + restart** para aplicar cambios.
-
-Si cambias el entrypoint de PM2 (por ejemplo de `dist/src/index.js` a
-`dist/index.js`), recrea el proceso:
-
-```bash
-pm2 delete my-daily-task-history 2>/dev/null
-PORT=3010 pm2 start server/dist/index.js --name my-daily-task-history
-pm2 save
-```
+Ver la sección **[Redespliegue (si no es la primera vez)](#redespliegue-si-no-es-la-primera-vez)**:
+`git push` en local + `git pull && pnpm install --frozen-lockfile && pnpm build
+&& pm2 restart` en el VPS. `git pull` solo trae código: hace falta
+**build + restart** para aplicar cambios.
 
 ### Datos de producción
 
