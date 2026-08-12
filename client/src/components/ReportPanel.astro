@@ -68,7 +68,7 @@
 <script>
     import { api } from '../lib/api';
     import { create, onPageReady, query, showError } from '../lib/dom';
-    import { onDataChanged } from '../lib/events';
+    import { dataChangeDetail, onDataChanged } from '../lib/events';
     import {
         addDays,
         formatDateShort,
@@ -467,7 +467,14 @@
             },
             { signal },
         );
-        onDataChanged(() => void load(), { signal });
+        onDataChanged(
+            (event: Event) => {
+                //  -----  el completado no afecta al informe  -----
+                if (dataChangeDetail(event).type === 'task-status') return;
+                void load();
+            },
+            { signal },
+        );
 
         void load();
     });

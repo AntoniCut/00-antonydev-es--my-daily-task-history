@@ -99,7 +99,7 @@ const transitionName = 'calendar';
         placeFixed,
         readSavedPosition,
     } from '../lib/draggable';
-    import { onDataChanged } from '../lib/events';
+    import { dataChangeDetail, onDataChanged } from '../lib/events';
     import {
         MONTH_NAMES,
         formatDateLong,
@@ -417,7 +417,23 @@ const transitionName = 'calendar';
             { signal },
         );
 
-        onDataChanged(() => void refresh(), { signal });
+        onDataChanged(
+            (event: Event) => {
+                const detail = dataChangeDetail(event);
+
+                //  -----  el completado no se muestra en el calendario  -----
+                if (detail.type === 'task-status') return;
+
+                //  -----  si solo cambió un registro de otro mes, no recargar  -----
+                if (detail.type === 'entry' && detail.date) {
+                    const monthKey = `${viewYear}-${pad(viewMonth + 1)}`;
+                    if (detail.date.slice(0, 7) !== monthKey) return;
+                }
+
+                void refresh();
+            },
+            { signal },
+        );
 
         if (variant === 'compact') {
             /*

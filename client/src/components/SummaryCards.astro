@@ -40,7 +40,7 @@
 <script>
     import { api } from '../lib/api';
     import { onPageReady, query, showError } from '../lib/dom';
-    import { onDataChanged } from '../lib/events';
+    import { dataChangeDetail, onDataChanged } from '../lib/events';
     import { formatDateLong, formatHours, formatMinutes } from '../lib/time';
 
     onPageReady((signal) => {
@@ -108,7 +108,14 @@
             }
         };
 
-        onDataChanged(() => void load(), { signal });
+        onDataChanged(
+            (event: Event) => {
+                //  -----  el completado no afecta a las tarjetas  -----
+                if (dataChangeDetail(event).type === 'task-status') return;
+                void load();
+            },
+            { signal },
+        );
         void load();
     });
 </script>

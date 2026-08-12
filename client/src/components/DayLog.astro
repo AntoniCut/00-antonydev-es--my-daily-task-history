@@ -126,7 +126,7 @@ const { date } = Astro.props;
 <script>
     import { api } from '../lib/api';
     import { create, onPageReady, query, showConfirm, showError } from '../lib/dom';
-    import { emitDataChanged, onDataChanged } from '../lib/events';
+    import { dataChangeDetail, emitDataChanged, onDataChanged } from '../lib/events';
     import {
         currentTime,
         formatDateLong,
@@ -472,7 +472,9 @@ const { date } = Astro.props;
                         if (!confirmed) return;
 
                         api.deleteEntry(entry.id)
-                            .then(emitDataChanged)
+                            .then(() =>
+                                emitDataChanged({ type: 'entry', date: entry.date }),
+                            )
                             .catch((error: Error) =>
                                 showError(errorEl, error.message),
                             );
@@ -587,7 +589,9 @@ const { date } = Astro.props;
                     end: end.value,
                     note: note.value,
                 })
-                    .then(emitDataChanged)
+                    .then(() =>
+                        emitDataChanged({ type: 'entry', date: entry.date }),
+                    )
                     .catch((error: Error) => showError(errorEl, error.message));
             });
 
@@ -667,7 +671,7 @@ const { date } = Astro.props;
                         startInput.value = endInput.value;
                         endInput.value = '';
                         closeForm();
-                        emitDataChanged();
+                        emitDataChanged({ type: 'entry', date: currentDate });
                     })
                     .catch((error: Error) =>
                         showError(formErrorEl, error.message),
@@ -677,7 +681,15 @@ const { date } = Astro.props;
         );
 
         onDataChanged(
-            () => {
+            (event: Event) => {
+                const detail = dataChangeDetail(event);
+
+                //  -----  si solo cambió un registro, no recargar las tareas  -----
+                if (detail.type === 'entry') {
+                    void loadEntries();
+                    return;
+                }
+
                 void fillTasks().then(() => loadEntries());
             },
             { signal },

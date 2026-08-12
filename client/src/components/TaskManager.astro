@@ -87,7 +87,12 @@
     import { api } from '../lib/api';
     import { nextColor, resolveSubtaskColor } from '../lib/colors';
     import { create, onPageReady, query, showConfirm, showError } from '../lib/dom';
-    import { emitDataChanged, onDataChanged } from '../lib/events';
+    import {
+        dataChangeDetail,
+        emitDataChanged,
+        onDataChanged,
+        type DataChangeType,
+    } from '../lib/events';
     import { formatMinutes } from '../lib/time';
     import type { Subtask, SubtaskDraft, Task, TimeEntry } from '../../types/types';
 
@@ -259,14 +264,15 @@
         };
 
         /**
-         * ---------------------------------------
-         * -----  `inlineForm(children, save)`  -----
-         * ---------------------------------------
+         * -------------------------------------------------
+         * -----  `inlineForm(children, save, type)`  -----
+         * -------------------------------------------------
          * - Envuelve un formulario inline y delega su guardado.
          */
         const inlineForm = (
             children: HTMLElement[],
             save: () => Promise<unknown>,
+            type: DataChangeType = 'task',
         ): HTMLFormElement => {
             const form = create('form', { className: 'inline-form' });
             form.append(...children);
@@ -280,7 +286,7 @@
             form.addEventListener('submit', (event: SubmitEvent) => {
                 event.preventDefault();
                 save()
-                    .then(emitDataChanged)
+                    .then(() => emitDataChanged({ type }))
                     .catch((error: Error) =>
                         showError(treeErrorEl, error.message),
                     );
@@ -342,11 +348,14 @@
                 'Color de la subtarea',
             );
 
-            return inlineForm([title, color, inlineActions('Guardar')], () =>
-                api.updateSubtask(task.id, subtask.id, {
-                    title: title.value,
-                    color: color.value,
-                }),
+            return inlineForm(
+                [title, color, inlineActions('Guardar')],
+                () =>
+                    api.updateSubtask(task.id, subtask.id, {
+                        title: title.value,
+                        color: color.value,
+                    }),
+                'subtask',
             );
         };
 
@@ -366,11 +375,14 @@
             });
             const color = inlineColor(task.color, 'Color de la subtarea');
 
-            return inlineForm([title, color, inlineActions('Añadir')], () =>
-                api.createSubtask(task.id, {
-                    title: title.value,
-                    color: color.value,
-                }),
+            return inlineForm(
+                [title, color, inlineActions('Añadir')],
+                () =>
+                    api.createSubtask(task.id, {
+                        title: title.value,
+                        color: color.value,
+                    }),
+                'subtask',
             );
         };
 
@@ -378,14 +390,16 @@
 
         /**
          * --------------------------------
-         * -----  `run(action)`  -----
+         * -----  `run(action, type)`  -----
          * --------------------------------
-         * - Ejecuta una acción remota y propaga el refresco global.
+         * - Ejecuta una acción remota y propaga el refresco global tipado.
          */
-        const run = (action: Promise<unknown>): void => {
+        const run = (action: Promise<unknown>, type: DataChangeType = 'task'): void => {
             action
-                .then(emitDataChanged)
-                .catch((error: Error) => showError(treeErrorEl, error.message));
+                .then(() => emitDataChanged({ type }))
+                .catch((error: Error) =>
+                    showError(treeErrorEl, error.message),
+                );
         };
 
         /**
@@ -437,12 +451,26 @@
             checkbox.checked = subtask.completed;
             checkbox.addEventListener(
                 'change',
-                () =>
-                    run(
-                        api.updateSubtask(task.id, subtask.id, {
-                            completed: checkbox.checked,
-                        }),
-                    ),
+                () => {
+                    //  -----  actualizar al instante sin recargar el árbol  -----
+                    subtask.completed = checkbox.checked;
+                    item.classList.toggle('is-completed', subtask.completed);
+
+                    api.updateSubtask(task.id, subtask.id, {
+                        completed: subtask.completed,
+                    })
+                        .then(() => emitDataChanged({ type: 'task-status' }))
+                        .catch((error: Error) => {
+                            //  -----  revertir el estado optimista si falla  -----
+                            subtask.completed = !subtask.completed;
+                            checkbox.checked = subtask.completed;
+                            item.classList.toggle(
+                                'is-completed',
+                                subtask.completed,
+                            );
+                            showError(treeErrorEl, error.message);
+                        });
+                },
                 { signal },
             );
 
@@ -475,6 +503,7 @@
                             api.updateSubtask(task.id, subtask.id, {
                                 active: !subtask.active,
                             }),
+                            'subtask',
                         ),
                 ),
                 iconButton('🗑️', 'Eliminar subtarea', () => {
@@ -486,7 +515,7 @@
                     }).then((confirmed) => {
                         //  -----  si se cancela la confirmación, no eliminar la subtarea  -----
                         if (!confirmed) return;
-                        run(api.deleteSubtask(task.id, subtask.id));
+                        run(api.deleteSubtask(task.id, subtask.id), 'subtask');
                     });
                 }),
             );
@@ -522,12 +551,26 @@
             checkbox.checked = task.completed;
             checkbox.addEventListener(
                 'change',
-                () =>
-                    run(
-                        api.updateTask(task.id, {
-                            completed: checkbox.checked,
-                        }),
-                    ),
+                () => {
+                    //  -----  actualizar al instante sin recargar el árbol  -----
+                    task.completed = checkbox.checked;
+                    item.classList.toggle('is-completed', task.completed);
+
+                    api.updateTask(task.id, {
+                        completed: task.completed,
+                    })
+                        .then(() => emitDataChanged({ type: 'task-status' }))
+                        .catch((error: Error) => {
+                            //  -----  revertir el estado optimista si falla  -----
+                            task.completed = !task.completed;
+                            checkbox.checked = task.completed;
+                            item.classList.toggle(
+                                'is-completed',
+                                task.completed,
+                            );
+                            showError(treeErrorEl, error.message);
+                        });
+                },
                 { signal },
             );
 
@@ -577,7 +620,7 @@
                     task.active ? '⏸' : '▶',
                     task.active ? 'Dar de baja' : 'Volver a dar de alta',
                     () =>
-                        run(api.updateTask(task.id, { active: !task.active })),
+                        run(api.updateTask(task.id, { active: !task.active }), 'task'),
                 ),
                 iconButton('🗑️', 'Eliminar tarea', () => {
                     void showConfirm({
@@ -588,7 +631,7 @@
                     }).then((confirmed) => {
                         //  -----  si se cancela la confirmación, no eliminar la tarea  -----
                         if (!confirmed) return;
-                        run(api.deleteTask(task.id));
+                        run(api.deleteTask(task.id), 'task');
                     });
                 }),
             );
@@ -750,7 +793,7 @@
                 })
                     .then(() => {
                         resetNewForm();
-                        emitDataChanged();
+                        emitDataChanged({ type: 'task' });
                     })
                     .catch((error: Error) =>
                         showError(newErrorEl, error.message),
@@ -760,7 +803,14 @@
         );
 
         showInactiveInput.addEventListener('change', render, { signal });
-        onDataChanged(() => void load(), { signal });
+        onDataChanged(
+            (event: Event) => {
+                //  -----  el completado ya se aplicó de forma optimista  -----
+                if (dataChangeDetail(event).type === 'task-status') return;
+                void load();
+            },
+            { signal },
+        );
 
         colorInput.value = nextColor(0);
         addSubtaskInput();
