@@ -390,11 +390,11 @@
             //  -----  si todavía no hay resumen, no exportar  -----
             if (!summary) return;
 
+            //  -----  rango vigente en el formulario (siempre relleno)  -----
+            const range = { from: fromInput.value, to: toInput.value };
+
             try {
-                const entries = await api.getEntries({
-                    from: summary.from,
-                    to: summary.to,
-                });
+                const entries = await api.getEntries(range);
 
                 //  -----  si no hay registros, mostrar un aviso visual  -----
                 if (entries.length === 0) {
@@ -429,7 +429,7 @@
                 ];
 
                 downloadCsv(
-                    `tiempo_${summary.from ?? 'inicio'}_${summary.to ?? 'fin'}.csv`,
+                    `tiempo_${range.from}_${range.to}.csv`,
                     rows,
                 );
                 showError(errorEl, null);

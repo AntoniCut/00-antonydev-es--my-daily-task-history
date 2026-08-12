@@ -659,7 +659,7 @@
          * - Asigna el siguiente color sugerido para una nueva tarea.
          */
         const setDefaultTaskColor = (): void => {
-            colorInput.value = nextColor(tasks.length);
+            colorInput.value = nextColor(tasks.filter((task) => task.active).length);
         };
 
         /**

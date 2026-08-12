@@ -70,6 +70,8 @@ const transitionName = 'calendar';
 
     <div class="calendar-grid" role="grid" data-grid></div>
 
+    <p class="calendar-error" role="alert" data-error hidden></p>
+
     <footer class="calendar-footer">
         <p class="muted-text" data-month-total></p>
 
@@ -89,7 +91,7 @@ const transitionName = 'calendar';
 <script>
     import { navigate } from 'astro:transitions/client';
     import { api } from '../lib/api';
-    import { create, onPageReady, query } from '../lib/dom';
+    import { create, onPageReady, query, showError } from '../lib/dom';
     import { dockFixed, makeDraggable } from '../lib/draggable';
     import { onDataChanged } from '../lib/events';
     import {
@@ -198,6 +200,9 @@ const transitionName = 'calendar';
         // - `Rejilla de días del calendario`
         const gridEl = query<HTMLDivElement>(root, '[data-grid]');
 
+        // - `Mensaje de error de la carga mensual`
+        const errorEl = query<HTMLParagraphElement>(root, '[data-error]');
+
         // - `Texto del total mensual`
         const totalEl = query<HTMLParagraphElement>(root, '[data-month-total]');
 
@@ -269,10 +274,12 @@ const transitionName = 'calendar';
                 }
 
                 daysByDate = next;
+                showError(errorEl, null);
             }
-            //  -----  si la carga falla, vaciar el mapa de días  -----
-            catch {
+            //  -----  si la carga falla, mostrar el error y vaciar el mapa  -----
+            catch (error) {
                 daysByDate = new Map();
+                showError(errorEl, (error as Error).message);
             }
         };
 
@@ -596,6 +603,15 @@ const transitionName = 'calendar';
         justify-content: space-between;
         gap: 0.75rem;
         margin-top: 1rem;
+    }
+
+    .calendar-error {
+        margin: 0.5rem 0 0;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+        color: var(--color-danger);
+        font-size: 0.875rem;
     }
 
     .calendar-footer-actions {

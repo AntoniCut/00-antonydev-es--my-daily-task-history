@@ -395,7 +395,7 @@ const { date } = Astro.props;
          */
         const renderEntry = (entry: TimeEntryView): HTMLElement => {
             const block = create('article', { className: 'entry-block' });
-            const crossesMidnight = entry.end <= entry.start;
+            const crossesMidnight = entry.end < entry.start;
 
             const timeRow = create('div', { className: 'entry-time-row' });
             timeRow.appendChild(

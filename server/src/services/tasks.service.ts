@@ -157,7 +157,9 @@ export class TasksService {
         assertUniqueActiveTitle(tasks, title);
         const now = new Date().toISOString();
 
-        const taskColor = isHexColor(dto.color) ? dto.color : nextColor(tasks.length);
+        const taskColor = isHexColor(dto.color)
+            ? dto.color
+            : nextColor(tasks.filter((task) => task.active).length);
         const subtaskDrafts = Array.isArray(dto.subtasks) ? dto.subtasks : [];
         const subtasks = subtaskDrafts
             .map((draft) => ({
